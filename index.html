@@ -170,9 +170,8 @@
         // ============================================
         // CONFIGURATION SUPABASE (Base de données en ligne)
         // ============================================
-        // 👇 REMPLACE CES VALEURS PAR LES TIENNES (voir SETUP_SUPABASE.md)
-        const SUPABASE_URL = 'https://XXXXX.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyXXXXX';
+        const SUPABASE_URL = 'https://gxoyfllirrwsarpzmpvq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b3lmbGxpcnJ3c2FycHptcHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDY0ODcsImV4cCI6MjA4NTAyMjQ4N30.FEnjMRm5gU2FqTujsmRmmySuYh7rPdKCbe1m753ZZBg';
         
         // Client Supabase (sera initialisé si les clés sont configurées)
         let supabase = null;
@@ -239,60 +238,239 @@
         const DataContext = createContext(null);
         const useData = () => useContext(DataContext);
 
-        // Provider des données
+        // Provider des données avec Supabase
         const DataProvider = ({ children }) => {
-            const [players, setPlayers] = useState(() => Storage.get('players', INITIAL_PLAYERS));
-            const [teams, setTeams] = useState(() => Storage.get('teams', INITIAL_TEAMS));
-            const [matches, setMatches] = useState(() => Storage.get('matches', []));
-            const [settings, setSettings] = useState(() => Storage.get('settings', INITIAL_SETTINGS));
-            const [friendships, setFriendships] = useState(() => Storage.get('friendships', []));
-            const [friendRequests, setFriendRequests] = useState(() => Storage.get('friendRequests', []));
-            const [messages, setMessages] = useState(() => Storage.get('messages', []));
+            const [players, setPlayers] = useState([]);
+            const [teams, setTeams] = useState([]);
+            const [matches, setMatches] = useState([]);
+            const [settings, setSettings] = useState(INITIAL_SETTINGS);
+            const [friendships, setFriendships] = useState([]);
+            const [friendRequests, setFriendRequests] = useState([]);
+            const [messages, setMessages] = useState([]);
+            const [loading, setLoading] = useState(true);
 
-            // Sauvegarder dans localStorage à chaque changement
+            // Charger les données depuis Supabase au démarrage
+            useEffect(() => {
+                const loadData = async () => {
+                    if (!supabase) {
+                        // Mode localStorage si Supabase non configuré
+                        setPlayers(Storage.get('players', []));
+                        setTeams(Storage.get('teams', []));
+                        setMatches(Storage.get('matches', []));
+                        setSettings(Storage.get('settings', INITIAL_SETTINGS));
+                        setFriendships(Storage.get('friendships', []));
+                        setFriendRequests(Storage.get('friendRequests', []));
+                        setMessages(Storage.get('messages', []));
+                        setLoading(false);
+                        return;
+                    }
+
+                    try {
+                        // Charger depuis Supabase
+                        const [playersRes, teamsRes, matchesRes, settingsRes, friendshipsRes, requestsRes, messagesRes] = await Promise.all([
+                            supabase.from('players').select('*').order('created_at', { ascending: false }),
+                            supabase.from('teams').select('*').order('created_at', { ascending: false }),
+                            supabase.from('matches').select('*').order('date', { ascending: false }),
+                            supabase.from('settings').select('*').single(),
+                            supabase.from('friendships').select('*'),
+                            supabase.from('friend_requests').select('*'),
+                            supabase.from('messages').select('*').order('created_at', { ascending: true })
+                        ]);
+
+                        // Transformer les données Supabase vers le format de l'app
+                        if (playersRes.data) setPlayers(playersRes.data.map(p => ({
+                            id: p.id,
+                            discordName: p.discord_name,
+                            discordId: p.discord_id,
+                            avatarUrl: p.avatar_url,
+                            status: p.status || 'solo',
+                            partner: p.partner,
+                            availability: p.availability,
+                            levels: p.levels || {}
+                        })));
+
+                        if (teamsRes.data) setTeams(teamsRes.data.map(t => ({
+                            id: t.id,
+                            name: t.name,
+                            image: t.image_url,
+                            players: t.players || [],
+                            active: t.active,
+                            points: t.points || {}
+                        })));
+
+                        if (matchesRes.data) setMatches(matchesRes.data.map(m => ({
+                            id: m.id,
+                            team1Id: m.team1_id,
+                            team2Id: m.team2_id,
+                            gameId: m.game_id,
+                            winner: m.winner,
+                            declaredBy: m.declared_by,
+                            date: m.date
+                        })));
+
+                        if (settingsRes.data) setSettings({
+                            registrationOpen: settingsRes.data.registration_open,
+                            seasonName: settingsRes.data.season_name,
+                            tournamentStarted: settingsRes.data.tournament_started,
+                            adminPassword: settingsRes.data.admin_password
+                        });
+
+                        if (friendshipsRes.data) setFriendships(friendshipsRes.data.map(f => ({
+                            id: f.id,
+                            user1: f.user1,
+                            user2: f.user2,
+                            date: f.created_at
+                        })));
+
+                        if (requestsRes.data) setFriendRequests(requestsRes.data.map(r => ({
+                            id: r.id,
+                            from: r.from_user,
+                            to: r.to_user,
+                            date: r.created_at
+                        })));
+
+                        if (messagesRes.data) setMessages(messagesRes.data.map(m => ({
+                            id: m.id,
+                            from: m.from_user,
+                            to: m.to_user,
+                            content: m.content,
+                            read: m.read,
+                            date: m.created_at
+                        })));
+
+                        console.log('✅ Données chargées depuis Supabase');
+                    } catch (error) {
+                        console.error('Erreur chargement Supabase:', error);
+                    }
+                    setLoading(false);
+                };
+
+                loadData();
+
+                // Écouter les changements en temps réel
+                if (supabase) {
+                    const channel = supabase.channel('realtime-all')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => loadData())
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => loadData())
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => loadData())
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => loadData())
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => loadData())
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, () => loadData())
+                        .subscribe();
+
+                    return () => supabase.removeChannel(channel);
+                }
+            }, []);
+
+            // Sauvegarder dans localStorage comme backup
             useEffect(() => { Storage.set('players', players); }, [players]);
             useEffect(() => { Storage.set('teams', teams); }, [teams]);
             useEffect(() => { Storage.set('matches', matches); }, [matches]);
             useEffect(() => { Storage.set('settings', settings); }, [settings]);
-            useEffect(() => { Storage.set('friendships', friendships); }, [friendships]);
-            useEffect(() => { Storage.set('friendRequests', friendRequests); }, [friendRequests]);
-            useEffect(() => { Storage.set('messages', messages); }, [messages]);
 
             // Fonctions pour manipuler les données
-            const addTeam = (team) => {
-                setTeams(prev => [team, ...prev]);
+            const addTeam = async (team) => {
+                if (supabase) {
+                    const { data, error } = await supabase.from('teams').insert({
+                        name: team.name,
+                        image_url: team.image,
+                        players: team.players,
+                        active: true,
+                        points: team.points || {}
+                    }).select().single();
+                    if (data) setTeams(prev => [{ ...team, id: data.id }, ...prev]);
+                } else {
+                    setTeams(prev => [team, ...prev]);
+                }
             };
 
-            const updateTeam = (teamId, updates) => {
+            const updateTeam = async (teamId, updates) => {
+                if (supabase) {
+                    await supabase.from('teams').update({
+                        name: updates.name,
+                        image_url: updates.image,
+                        players: updates.players,
+                        active: updates.active,
+                        points: updates.points
+                    }).eq('id', teamId);
+                }
                 setTeams(prev => prev.map(t => t.id === teamId ? { ...t, ...updates } : t));
             };
 
-            const deleteTeam = (teamId) => {
+            const deleteTeam = async (teamId) => {
+                if (supabase) {
+                    await supabase.from('teams').delete().eq('id', teamId);
+                }
                 setTeams(prev => prev.filter(t => t.id !== teamId));
             };
 
-            const addPlayer = (player) => {
-                setPlayers(prev => [player, ...prev]);
+            const addPlayer = async (player) => {
+                if (supabase) {
+                    const { data, error } = await supabase.from('players').insert({
+                        discord_name: player.discordName,
+                        discord_id: player.discordId,
+                        avatar_url: player.avatarUrl,
+                        status: player.status || 'solo',
+                        partner: player.partner,
+                        availability: player.availability,
+                        levels: player.levels || {}
+                    }).select().single();
+                    if (data) setPlayers(prev => [{ ...player, id: data.id }, ...prev]);
+                } else {
+                    setPlayers(prev => [player, ...prev]);
+                }
             };
 
-            const updatePlayer = (playerId, updates) => {
+            const updatePlayer = async (playerId, updates) => {
+                if (supabase) {
+                    await supabase.from('players').update({
+                        discord_name: updates.discordName,
+                        status: updates.status,
+                        partner: updates.partner,
+                        availability: updates.availability,
+                        levels: updates.levels
+                    }).eq('id', playerId);
+                }
                 setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, ...updates } : p));
             };
 
-            const updatePlayerByDiscord = (discordName, updates) => {
+            const updatePlayerByDiscord = async (discordName, updates) => {
+                if (supabase) {
+                    await supabase.from('players').update({
+                        status: updates.status,
+                        partner: updates.partner,
+                        availability: updates.availability,
+                        levels: updates.levels
+                    }).eq('discord_name', discordName);
+                }
                 setPlayers(prev => prev.map(p => p.discordName === discordName ? { ...p, ...updates } : p));
             };
 
-            const deletePlayer = (playerId) => {
+            const deletePlayer = async (playerId) => {
+                if (supabase) {
+                    await supabase.from('players').delete().eq('id', playerId);
+                }
                 setPlayers(prev => prev.filter(p => p.id !== playerId));
             };
 
-            const addMatch = (match) => {
+            const addMatch = async (match) => {
                 const newMatch = {
                     ...match,
                     id: Date.now().toString(),
                     date: new Date().toISOString()
                 };
+
+                if (supabase) {
+                    const { data } = await supabase.from('matches').insert({
+                        team1_id: match.team1Id,
+                        team2_id: match.team2Id,
+                        game_id: match.gameId,
+                        winner: match.winner,
+                        declared_by: match.declaredBy
+                    }).select().single();
+                    if (data) newMatch.id = data.id;
+                }
+
                 setMatches(prev => [newMatch, ...prev]);
 
                 // Mettre à jour les points des équipes
@@ -322,7 +500,7 @@
             };
 
             // Fonctions pour les amis
-            const sendFriendRequest = (fromUser, toUser) => {
+            const sendFriendRequest = async (fromUser, toUser) => {
                 const existingRequest = friendRequests.find(
                     r => (r.from === fromUser && r.to === toUser) || (r.from === toUser && r.to === fromUser)
                 );
@@ -333,33 +511,62 @@
                 );
                 if (alreadyFriends) return false;
 
-                setFriendRequests(prev => [...prev, {
+                const newRequest = {
                     id: Date.now().toString(),
                     from: fromUser,
                     to: toUser,
                     date: new Date().toISOString()
-                }]);
+                };
+
+                if (supabase) {
+                    const { data } = await supabase.from('friend_requests').insert({
+                        from_user: fromUser,
+                        to_user: toUser
+                    }).select().single();
+                    if (data) newRequest.id = data.id;
+                }
+
+                setFriendRequests(prev => [...prev, newRequest]);
                 return true;
             };
 
-            const acceptFriendRequest = (requestId) => {
+            const acceptFriendRequest = async (requestId) => {
                 const request = friendRequests.find(r => r.id === requestId);
                 if (!request) return;
 
-                setFriendships(prev => [...prev, {
+                const newFriendship = {
                     id: Date.now().toString(),
                     user1: request.from,
                     user2: request.to,
                     date: new Date().toISOString()
-                }]);
+                };
+
+                if (supabase) {
+                    const { data } = await supabase.from('friendships').insert({
+                        user1: request.from,
+                        user2: request.to
+                    }).select().single();
+                    if (data) newFriendship.id = data.id;
+                    
+                    await supabase.from('friend_requests').delete().eq('id', requestId);
+                }
+
+                setFriendships(prev => [...prev, newFriendship]);
                 setFriendRequests(prev => prev.filter(r => r.id !== requestId));
             };
 
-            const declineFriendRequest = (requestId) => {
+            const declineFriendRequest = async (requestId) => {
+                if (supabase) {
+                    await supabase.from('friend_requests').delete().eq('id', requestId);
+                }
                 setFriendRequests(prev => prev.filter(r => r.id !== requestId));
             };
 
-            const removeFriend = (user1, user2) => {
+            const removeFriend = async (user1, user2) => {
+                if (supabase) {
+                    await supabase.from('friendships').delete()
+                        .or(`and(user1.eq.${user1},user2.eq.${user2}),and(user1.eq.${user2},user2.eq.${user1})`);
+                }
                 setFriendships(prev => prev.filter(
                     f => !((f.user1 === user1 && f.user2 === user2) || (f.user1 === user2 && f.user2 === user1))
                 ));
@@ -386,7 +593,7 @@
             };
 
             // Fonctions pour les messages
-            const sendMessage = (fromUser, toUser, content) => {
+            const sendMessage = async (fromUser, toUser, content) => {
                 const newMessage = {
                     id: Date.now().toString(),
                     from: fromUser,
@@ -395,6 +602,17 @@
                     date: new Date().toISOString(),
                     read: false
                 };
+
+                if (supabase) {
+                    const { data } = await supabase.from('messages').insert({
+                        from_user: fromUser,
+                        to_user: toUser,
+                        content: content,
+                        read: false
+                    }).select().single();
+                    if (data) newMessage.id = data.id;
+                }
+
                 setMessages(prev => [...prev, newMessage]);
                 return newMessage;
             };
@@ -419,7 +637,14 @@
                 }).sort((a, b) => new Date(b.lastMessage?.date || 0) - new Date(a.lastMessage?.date || 0));
             };
 
-            const markMessagesAsRead = (fromUser, toUser) => {
+            const markMessagesAsRead = async (fromUser, toUser) => {
+                if (supabase) {
+                    await supabase.from('messages')
+                        .update({ read: true })
+                        .eq('from_user', fromUser)
+                        .eq('to_user', toUser)
+                        .eq('read', false);
+                }
                 setMessages(prev => prev.map(m => 
                     m.from === fromUser && m.to === toUser && !m.read
                         ? { ...m, read: true }
@@ -431,19 +656,61 @@
                 return messages.filter(m => m.to === username && !m.read).length;
             };
 
-            const updateSettings = (newSettings) => {
+            const updateSettings = async (newSettings) => {
+                if (supabase) {
+                    await supabase.from('settings').update({
+                        registration_open: newSettings.registrationOpen,
+                        season_name: newSettings.seasonName,
+                        tournament_started: newSettings.tournamentStarted,
+                        admin_password: newSettings.adminPassword
+                    }).eq('id', 1);
+                }
                 setSettings(prev => ({ ...prev, ...newSettings }));
             };
 
-            const resetAllData = () => {
-                setPlayers(INITIAL_PLAYERS);
-                setTeams(INITIAL_TEAMS);
+            const resetAllData = async () => {
+                if (supabase) {
+                    await Promise.all([
+                        supabase.from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                        supabase.from('teams').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                        supabase.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                        supabase.from('friendships').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                        supabase.from('friend_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+                        supabase.from('messages').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+                    ]);
+                }
+                setPlayers([]);
+                setTeams([]);
                 setMatches([]);
                 setSettings(INITIAL_SETTINGS);
                 setFriendships([]);
                 setFriendRequests([]);
                 setMessages([]);
             };
+
+            // Afficher un loader pendant le chargement
+            if (loading) {
+                return (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100vh',
+                        background: 'var(--bg-dark)'
+                    }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚡</div>
+                            <div style={{ 
+                                fontFamily: "'Orbitron', monospace",
+                                color: 'var(--accent-cyan)',
+                                fontSize: '18px'
+                            }}>
+                                Chargement...
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
                 <DataContext.Provider value={{
