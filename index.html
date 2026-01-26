@@ -7,6 +7,8 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Supabase pour la base de données en ligne -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -166,6 +168,24 @@
         };
 
         // ============================================
+        // CONFIGURATION SUPABASE (Base de données en ligne)
+        // ============================================
+        // 👇 REMPLACE CES VALEURS PAR LES TIENNES (voir SETUP_SUPABASE.md)
+        const SUPABASE_URL = 'https://XXXXX.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyXXXXX';
+        
+        // Client Supabase (sera initialisé si les clés sont configurées)
+        let supabase = null;
+        const SUPABASE_ENABLED = SUPABASE_URL !== 'https://XXXXX.supabase.co';
+        
+        if (SUPABASE_ENABLED && window.supabase) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase connecté');
+        } else if (!SUPABASE_ENABLED) {
+            console.log('ℹ️ Mode hors-ligne (localStorage). Configure Supabase pour synchroniser en ligne.');
+        }
+
+        // ============================================
         // DONNÉES & CONTEXTE
         // ============================================
 
@@ -195,188 +215,10 @@
             draw: 5
         };
 
-        // Données initiales
-        const INITIAL_PLAYERS = [
-            { 
-                id: '1', 
-                discordName: 'NeoX#1337', 
-                status: 'duo', 
-                partner: 'CyberPunk#9999',
-                availability: 'Dispo le week-end après 21h',
-                levels: { 'rocket-league': 3, 'valorant': 4, 'league-of-legends': 2, 'brawlhalla': 0, 'fall-guys': 1, 'trackmania': 2, 'hearthstone': 0, '2xko': 1 }
-            },
-            { 
-                id: '2', 
-                discordName: 'CyberPunk#9999', 
-                status: 'duo', 
-                partner: 'NeoX#1337',
-                availability: 'Tous les soirs',
-                levels: { 'rocket-league': 4, 'valorant': 3, 'league-of-legends': 1, 'brawlhalla': 2, 'fall-guys': 2, 'trackmania': 0, 'hearthstone': 1, '2xko': 0 }
-            },
-            { 
-                id: '3', 
-                discordName: 'ShadowMage#4242', 
-                status: 'duo', 
-                partner: 'PixelQueen#7777',
-                availability: 'Mercredi et samedi',
-                levels: { 'rocket-league': 1, 'valorant': 2, 'league-of-legends': 4, 'brawlhalla': 3, 'fall-guys': 0, 'trackmania': 1, 'hearthstone': 3, '2xko': 2 }
-            },
-            { 
-                id: '4', 
-                discordName: 'PixelQueen#7777', 
-                status: 'duo', 
-                partner: 'ShadowMage#4242',
-                availability: 'Week-end uniquement',
-                levels: { 'rocket-league': 2, 'valorant': 1, 'league-of-legends': 3, 'brawlhalla': 4, 'fall-guys': 3, 'trackmania': 2, 'hearthstone': 0, '2xko': 4 }
-            },
-            { 
-                id: '5', 
-                discordName: 'ThunderBolt#5555', 
-                status: 'duo', 
-                partner: 'StormRider#6666',
-                availability: 'Après 22h en semaine',
-                levels: { 'rocket-league': 4, 'valorant': 4, 'league-of-legends': 0, 'brawlhalla': 1, 'fall-guys': 2, 'trackmania': 4, 'hearthstone': 0, '2xko': 0 }
-            },
-            { 
-                id: '6', 
-                discordName: 'StormRider#6666', 
-                status: 'duo', 
-                partner: 'ThunderBolt#5555',
-                availability: 'Après 22h en semaine',
-                levels: { 'rocket-league': 3, 'valorant': 4, 'league-of-legends': 1, 'brawlhalla': 0, 'fall-guys': 3, 'trackmania': 3, 'hearthstone': 2, '2xko': 1 }
-            },
-            { 
-                id: '7', 
-                discordName: 'GlitchMaster#2077', 
-                status: 'duo', 
-                partner: 'ByteNinja#8080',
-                availability: 'Tous les soirs après 20h',
-                levels: { 'rocket-league': 2, 'valorant': 3, 'league-of-legends': 4, 'brawlhalla': 2, 'fall-guys': 4, 'trackmania': 1, 'hearthstone': 3, '2xko': 2 }
-            },
-            { 
-                id: '8', 
-                discordName: 'ByteNinja#8080', 
-                status: 'duo', 
-                partner: 'GlitchMaster#2077',
-                availability: 'Soirs et week-ends',
-                levels: { 'rocket-league': 3, 'valorant': 2, 'league-of-legends': 3, 'brawlhalla': 4, 'fall-guys': 3, 'trackmania': 2, 'hearthstone': 1, '2xko': 4 }
-            },
-            { 
-                id: '9', 
-                discordName: 'VoidWalker#3030', 
-                status: 'duo', 
-                partner: 'AstralFlame#4040',
-                availability: 'Week-end après 18h',
-                levels: { 'rocket-league': 4, 'valorant': 1, 'league-of-legends': 2, 'brawlhalla': 3, 'fall-guys': 1, 'trackmania': 4, 'hearthstone': 2, '2xko': 1 }
-            },
-            { 
-                id: '10', 
-                discordName: 'AstralFlame#4040', 
-                status: 'duo', 
-                partner: 'VoidWalker#3030',
-                availability: 'Flexible',
-                levels: { 'rocket-league': 3, 'valorant': 3, 'league-of-legends': 1, 'brawlhalla': 2, 'fall-guys': 4, 'trackmania': 3, 'hearthstone': 4, '2xko': 2 }
-            },
-            { 
-                id: '11', 
-                discordName: 'CrimsonBlade#6969', 
-                status: 'duo', 
-                partner: 'IronFist#1212',
-                availability: 'Lundi et jeudi soir',
-                levels: { 'rocket-league': 1, 'valorant': 4, 'league-of-legends': 4, 'brawlhalla': 1, 'fall-guys': 2, 'trackmania': 0, 'hearthstone': 3, '2xko': 3 }
-            },
-            { 
-                id: '12', 
-                discordName: 'IronFist#1212', 
-                status: 'duo', 
-                partner: 'CrimsonBlade#6969',
-                availability: 'Soirs en semaine',
-                levels: { 'rocket-league': 2, 'valorant': 4, 'league-of-legends': 3, 'brawlhalla': 2, 'fall-guys': 1, 'trackmania': 1, 'hearthstone': 2, '2xko': 4 }
-            },
-            { 
-                id: '13', 
-                discordName: 'FrostByte#7878', 
-                status: 'solo', 
-                partner: null,
-                availability: 'Vendredi et samedi soir',
-                levels: { 'rocket-league': 3, 'valorant': 2, 'league-of-legends': 1, 'brawlhalla': 4, 'fall-guys': 3, 'trackmania': 2, 'hearthstone': 1, '2xko': 3 }
-            },
-            { 
-                id: '14', 
-                discordName: 'NovaStrike#9090', 
-                status: 'solo', 
-                partner: null,
-                availability: 'Tous les soirs',
-                levels: { 'rocket-league': 4, 'valorant': 3, 'league-of-legends': 2, 'brawlhalla': 1, 'fall-guys': 4, 'trackmania': 3, 'hearthstone': 0, '2xko': 2 }
-            },
-            { 
-                id: '15', 
-                discordName: 'DarkMatter#5050', 
-                status: 'solo', 
-                partner: null,
-                availability: 'Week-end uniquement',
-                levels: { 'rocket-league': 2, 'valorant': 4, 'league-of-legends': 3, 'brawlhalla': 2, 'fall-guys': 1, 'trackmania': 4, 'hearthstone': 3, '2xko': 1 }
-            },
-            { 
-                id: '16', 
-                discordName: 'QuantumLeap#1111', 
-                status: 'solo', 
-                partner: null,
-                availability: 'Flexible, préférence soirs',
-                levels: { 'rocket-league': 1, 'valorant': 2, 'league-of-legends': 4, 'brawlhalla': 3, 'fall-guys': 2, 'trackmania': 1, 'hearthstone': 4, '2xko': 3 }
-            }
-        ];
+        // Données initiales - VIDE (les vraies données seront chargées depuis Supabase)
+        const INITIAL_PLAYERS = [];
 
-        const INITIAL_TEAMS = [
-            { 
-                id: '1', 
-                name: 'NEON KNIGHTS', 
-                players: ['NeoX#1337', 'CyberPunk#9999'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=neonknights&backgroundColor=0f0f17',
-                points: { 'rocket-league': 45, 'valorant': 38, 'league-of-legends': 12, 'brawlhalla': 8, 'fall-guys': 15, 'trackmania': 20, 'hearthstone': 5, '2xko': 3 }
-            },
-            { 
-                id: '2', 
-                name: 'STORM CHASERS', 
-                players: ['ThunderBolt#5555', 'StormRider#6666'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=stormchasers&backgroundColor=0f0f17',
-                points: { 'rocket-league': 52, 'valorant': 48, 'league-of-legends': 0, 'brawlhalla': 5, 'fall-guys': 22, 'trackmania': 55, 'hearthstone': 8, '2xko': 0 }
-            },
-            { 
-                id: '3', 
-                name: 'SHADOW PIXELS', 
-                players: ['ShadowMage#4242', 'PixelQueen#7777'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=shadowpixels&backgroundColor=0f0f17',
-                points: { 'rocket-league': 18, 'valorant': 15, 'league-of-legends': 42, 'brawlhalla': 48, 'fall-guys': 12, 'trackmania': 10, 'hearthstone': 25, '2xko': 35 }
-            },
-            { 
-                id: '4', 
-                name: 'GLITCH SQUAD', 
-                players: ['GlitchMaster#2077', 'ByteNinja#8080'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=glitchsquad&backgroundColor=0f0f17',
-                points: { 'rocket-league': 28, 'valorant': 35, 'league-of-legends': 40, 'brawlhalla': 32, 'fall-guys': 45, 'trackmania': 18, 'hearthstone': 22, '2xko': 30 }
-            },
-            { 
-                id: '5', 
-                name: 'VOID LEGION', 
-                players: ['VoidWalker#3030', 'AstralFlame#4040'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=voidlegion&backgroundColor=0f0f17',
-                points: { 'rocket-league': 38, 'valorant': 22, 'league-of-legends': 15, 'brawlhalla': 28, 'fall-guys': 35, 'trackmania': 42, 'hearthstone': 30, '2xko': 12 }
-            },
-            { 
-                id: '6', 
-                name: 'CRIMSON FURY', 
-                players: ['CrimsonBlade#6969', 'IronFist#1212'], 
-                active: true,
-                image: 'https://api.dicebear.com/7.x/shapes/svg?seed=crimsonfury&backgroundColor=0f0f17',
-                points: { 'rocket-league': 12, 'valorant': 55, 'league-of-legends': 48, 'brawlhalla': 15, 'fall-guys': 18, 'trackmania': 8, 'hearthstone': 28, '2xko': 38 }
-            }
-        ];
+        const INITIAL_TEAMS = [];
 
         const INITIAL_SETTINGS = {
             registrationOpen: true,
@@ -2376,33 +2218,7 @@
 
         const NotificationsPage = ({ setCurrentPage }) => {
             const { user } = useAuth();
-            const [notifications, setNotifications] = useState([
-                {
-                    id: '1',
-                    type: 'team_invite',
-                    from: 'ShadowMage#4242',
-                    teamName: 'SHADOW PIXELS',
-                    message: 'veut créer une équipe avec toi',
-                    time: 'Il y a 2 heures',
-                    read: false
-                },
-                {
-                    id: '2',
-                    type: 'join_request',
-                    from: 'PixelQueen#7777',
-                    message: 'souhaite rejoindre ton équipe',
-                    time: 'Il y a 5 heures',
-                    read: false
-                },
-                {
-                    id: '3',
-                    type: 'match_result',
-                    message: 'Ton équipe a gagné contre STORM CHASERS sur Rocket League !',
-                    points: '+15',
-                    time: 'Hier',
-                    read: true
-                }
-            ]);
+            const [notifications, setNotifications] = useState([]);
 
             const handleAccept = (notifId) => {
                 setNotifications(prev => prev.map(n => 
