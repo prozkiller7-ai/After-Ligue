@@ -974,10 +974,41 @@
             const { user, logout } = useAuth();
             const { getUnreadCount, getPendingRequestsFor } = useData();
             const [menuOpen, setMenuOpen] = useState(false);
+            const [invitationCount, setInvitationCount] = useState(0);
 
             const unreadMessages = user ? getUnreadCount(user.discordName) : 0;
             const pendingRequests = user ? getPendingRequestsFor(user.discordName).length : 0;
             const totalMessageBadge = unreadMessages + pendingRequests;
+
+            // Charger le nombre d'invitations
+            useEffect(() => {
+                const loadInvitationCount = async () => {
+                    if (!user || !supabase) return;
+                    
+                    const { data, count } = await supabase
+                        .from('team_invitations')
+                        .select('*', { count: 'exact' })
+                        .eq('to_player', user.discordName)
+                        .eq('status', 'pending');
+                    
+                    setInvitationCount(count || 0);
+                };
+                
+                loadInvitationCount();
+                
+                // Écouter les changements en temps réel
+                if (supabase && user) {
+                    const channel = supabase.channel('invitation-count')
+                        .on('postgres_changes', { 
+                            event: '*', 
+                            schema: 'public', 
+                            table: 'team_invitations'
+                        }, () => loadInvitationCount())
+                        .subscribe();
+                    
+                    return () => supabase.removeChannel(channel);
+                }
+            }, [user]);
 
             const navItems = [
                 { id: 'home', label: 'Accueil', icon: '🏠' },
@@ -1106,23 +1137,25 @@
                                         }}
                                     >
                                         🔔
-                                        <span style={{
-                                            position: 'absolute',
-                                            top: '2px',
-                                            right: '2px',
-                                            background: 'var(--accent-pink)',
-                                            color: 'white',
-                                            fontSize: '10px',
-                                            fontWeight: 700,
-                                            width: '16px',
-                                            height: '16px',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            3
-                                        </span>
+                                        {invitationCount > 0 && (
+                                            <span style={{
+                                                position: 'absolute',
+                                                top: '2px',
+                                                right: '2px',
+                                                background: 'var(--accent-pink)',
+                                                color: 'white',
+                                                fontSize: '10px',
+                                                fontWeight: 700,
+                                                width: '16px',
+                                                height: '16px',
+                                                borderRadius: '50%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}>
+                                                {invitationCount}
+                                            </span>
+                                        )}
                                     </button>
 
                                     {/* Messages */}
@@ -2564,33 +2597,49 @@
                 const invitation = invitations.find(i => i.id === invitationId);
                 if (!invitation || !supabase) return;
                 
-                // Créer l'équipe avec les deux joueurs
-                const newTeam = {
-                    name: invitation.teamName || `Équipe de ${invitation.from}`,
-                    players: [invitation.from, user.discordName],
-                    active: true,
-                    points: GAMES.reduce((acc, g) => ({ ...acc, [g.id]: 0 }), {}),
-                    image: `https://api.dicebear.com/7.x/shapes/svg?seed=${Date.now()}&backgroundColor=0f0f17`
-                };
-                
-                await addTeam(newTeam);
-                
-                // Mettre à jour le statut de l'invitation
-                await supabase.from('team_invitations')
-                    .update({ status: 'accepted' })
-                    .eq('id', invitationId);
-                
-                // Mettre à jour le statut des joueurs
-                await supabase.from('players')
-                    .update({ status: 'duo', partner: user.discordName })
-                    .eq('discord_name', invitation.from);
-                
-                await supabase.from('players')
-                    .update({ status: 'duo', partner: invitation.from })
-                    .eq('discord_name', user.discordName);
-                
-                setInvitations(prev => prev.filter(i => i.id !== invitationId));
-                alert('Équipe créée avec succès ! 🎉');
+                try {
+                    // Créer l'équipe directement dans Supabase
+                    const teamName = invitation.teamName || `Équipe ${invitation.from.split('#')[0]}`;
+                    const { data: newTeamData, error: teamError } = await supabase.from('teams').insert({
+                        name: teamName,
+                        image_url: `https://api.dicebear.com/7.x/shapes/svg?seed=${Date.now()}&backgroundColor=0f0f17`,
+                        players: [invitation.from, user.discordName],
+                        active: true,
+                        points: { 'rocket-league': 0, 'brawlhalla': 0, 'league-of-legends': 0, 'valorant': 0, 'fall-guys': 0, 'trackmania': 0, 'hearthstone': 0, '2xko': 0 }
+                    }).select().single();
+                    
+                    if (teamError) {
+                        console.error('Erreur création équipe:', teamError);
+                        alert('Erreur lors de la création de l\'équipe');
+                        return;
+                    }
+                    
+                    console.log('✅ Équipe créée:', newTeamData);
+                    
+                    // Mettre à jour le statut de l'invitation
+                    await supabase.from('team_invitations')
+                        .update({ status: 'accepted' })
+                        .eq('id', invitationId);
+                    
+                    // Mettre à jour le statut des deux joueurs
+                    await supabase.from('players')
+                        .update({ status: 'duo', partner: user.discordName })
+                        .eq('discord_name', invitation.from);
+                    
+                    await supabase.from('players')
+                        .update({ status: 'duo', partner: invitation.from })
+                        .eq('discord_name', user.discordName);
+                    
+                    setInvitations(prev => prev.filter(i => i.id !== invitationId));
+                    alert(`Équipe "${teamName}" créée avec succès ! 🎉`);
+                    
+                    // Recharger la page pour voir les changements
+                    window.location.reload();
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Une erreur est survenue');
+                }
             };
 
             const handleDecline = async (invitationId) => {
