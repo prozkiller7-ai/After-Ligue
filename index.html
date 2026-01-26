@@ -1850,7 +1850,25 @@
                 }, 2000);
             };
 
-            const handleSendRequest = (player) => {
+            const handleSendRequest = async (player) => {
+                if (!user) return;
+                
+                // Envoyer l'invitation dans Supabase
+                if (supabase) {
+                    const { error } = await supabase.from('team_invitations').insert({
+                        from_player: user.discordName,
+                        to_player: player.discordName,
+                        team_name: userTeam?.name || 'Nouvelle équipe',
+                        status: 'pending'
+                    });
+                    
+                    if (error) {
+                        console.error('Erreur envoi invitation:', error);
+                        alert('Erreur lors de l\'envoi de l\'invitation');
+                        return;
+                    }
+                }
+                
                 setSelectedPlayer(player);
                 setRequestSent(true);
                 setTimeout(() => {
@@ -2492,22 +2510,97 @@
 
         const NotificationsPage = ({ setCurrentPage }) => {
             const { user } = useAuth();
-            const [notifications, setNotifications] = useState([]);
+            const { teams, addTeam, updateTeam } = useData();
+            const [invitations, setInvitations] = useState([]);
+            const [loading, setLoading] = useState(true);
 
-            const handleAccept = (notifId) => {
-                setNotifications(prev => prev.map(n => 
-                    n.id === notifId ? { ...n, accepted: true, read: true } : n
-                ));
+            // Charger les invitations depuis Supabase
+            useEffect(() => {
+                const loadInvitations = async () => {
+                    if (!user || !supabase) {
+                        setLoading(false);
+                        return;
+                    }
+                    
+                    const { data, error } = await supabase
+                        .from('team_invitations')
+                        .select('*')
+                        .eq('to_player', user.discordName)
+                        .eq('status', 'pending')
+                        .order('created_at', { ascending: false });
+                    
+                    if (data) {
+                        setInvitations(data.map(inv => ({
+                            id: inv.id,
+                            type: 'team_invite',
+                            from: inv.from_player,
+                            teamName: inv.team_name,
+                            message: 'veut créer une équipe avec toi',
+                            time: new Date(inv.created_at).toLocaleString('fr-FR'),
+                            read: false
+                        })));
+                    }
+                    setLoading(false);
+                };
+                
+                loadInvitations();
+                
+                // Écouter les nouvelles invitations en temps réel
+                if (supabase && user) {
+                    const channel = supabase.channel('invitations')
+                        .on('postgres_changes', { 
+                            event: '*', 
+                            schema: 'public', 
+                            table: 'team_invitations',
+                            filter: `to_player=eq.${user.discordName}`
+                        }, () => loadInvitations())
+                        .subscribe();
+                    
+                    return () => supabase.removeChannel(channel);
+                }
+            }, [user]);
+
+            const handleAccept = async (invitationId) => {
+                const invitation = invitations.find(i => i.id === invitationId);
+                if (!invitation || !supabase) return;
+                
+                // Créer l'équipe avec les deux joueurs
+                const newTeam = {
+                    name: invitation.teamName || `Équipe de ${invitation.from}`,
+                    players: [invitation.from, user.discordName],
+                    active: true,
+                    points: GAMES.reduce((acc, g) => ({ ...acc, [g.id]: 0 }), {}),
+                    image: `https://api.dicebear.com/7.x/shapes/svg?seed=${Date.now()}&backgroundColor=0f0f17`
+                };
+                
+                await addTeam(newTeam);
+                
+                // Mettre à jour le statut de l'invitation
+                await supabase.from('team_invitations')
+                    .update({ status: 'accepted' })
+                    .eq('id', invitationId);
+                
+                // Mettre à jour le statut des joueurs
+                await supabase.from('players')
+                    .update({ status: 'duo', partner: user.discordName })
+                    .eq('discord_name', invitation.from);
+                
+                await supabase.from('players')
+                    .update({ status: 'duo', partner: invitation.from })
+                    .eq('discord_name', user.discordName);
+                
+                setInvitations(prev => prev.filter(i => i.id !== invitationId));
+                alert('Équipe créée avec succès ! 🎉');
             };
 
-            const handleDecline = (notifId) => {
-                setNotifications(prev => prev.filter(n => n.id !== notifId));
-            };
-
-            const markAsRead = (notifId) => {
-                setNotifications(prev => prev.map(n => 
-                    n.id === notifId ? { ...n, read: true } : n
-                ));
+            const handleDecline = async (invitationId) => {
+                if (!supabase) return;
+                
+                await supabase.from('team_invitations')
+                    .update({ status: 'declined' })
+                    .eq('id', invitationId);
+                
+                setInvitations(prev => prev.filter(i => i.id !== invitationId));
             };
 
             const getNotificationIcon = (type) => {
@@ -2520,6 +2613,15 @@
                 }
             };
 
+            if (loading) {
+                return (
+                    <div style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+                        <p style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
+                    </div>
+                );
+            }
+
             return (
                 <div style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto' }}>
                     <div className="animate-fade-in">
@@ -2527,11 +2629,11 @@
                             🔔 Notifications
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                            {notifications.filter(n => !n.read).length} notification(s) non lue(s)
+                            {invitations.length} invitation(s) en attente
                         </p>
                     </div>
 
-                    {notifications.length === 0 ? (
+                    {invitations.length === 0 ? (
                         <Card style={{ textAlign: 'center', padding: '60px 24px' }} className="animate-fade-in">
                             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
                             <p style={{ color: 'var(--text-secondary)' }}>
@@ -2540,16 +2642,14 @@
                         </Card>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {notifications.map((notif, index) => (
+                            {invitations.map((notif, index) => (
                                 <Card 
                                     key={notif.id}
                                     style={{ 
                                         animationDelay: `${index * 0.05}s`,
-                                        borderLeft: notif.read ? '3px solid var(--border)' : '3px solid var(--accent-cyan)',
-                                        opacity: notif.read ? 0.7 : 1
+                                        borderLeft: '3px solid var(--accent-cyan)'
                                     }}
                                     className="animate-fade-in"
-                                    onClick={() => markAsRead(notif.id)}
                                 >
                                     <div style={{ 
                                         display: 'flex', 
@@ -2560,7 +2660,7 @@
                                         <div style={{
                                             width: '50px',
                                             height: '50px',
-                                            background: notif.read ? 'var(--bg-dark)' : 'rgba(0,240,255,0.1)',
+                                            background: 'rgba(0,240,255,0.1)',
                                             borderRadius: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -2573,105 +2673,52 @@
                                         
                                         <div style={{ flex: 1, minWidth: '200px' }}>
                                             <div style={{ marginBottom: '8px' }}>
-                                                {notif.from && (
+                                                <span style={{ 
+                                                    fontWeight: 600, 
+                                                    color: 'var(--accent-cyan)'
+                                                }}>
+                                                    {notif.from}
+                                                </span>
+                                                {' '}{notif.message}
+                                                {notif.teamName && (
                                                     <span style={{ 
                                                         fontWeight: 600, 
-                                                        color: 'var(--accent-cyan)' 
+                                                        color: 'var(--accent-violet)'
                                                     }}>
-                                                        {notif.from}
+                                                        {' '}({notif.teamName})
                                                     </span>
                                                 )}
-                                                {notif.from && ' '}
-                                                <span style={{ color: 'var(--text-primary)' }}>
-                                                    {notif.message}
-                                                </span>
                                             </div>
-                                            
-                                            {notif.teamName && (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    padding: '4px 12px',
-                                                    background: 'var(--bg-dark)',
-                                                    borderRadius: '4px',
-                                                    fontSize: '13px',
-                                                    fontFamily: "'Orbitron', monospace",
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    {notif.teamName}
-                                                </div>
-                                            )}
-
-                                            {notif.points && (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    padding: '4px 12px',
-                                                    background: 'rgba(34,197,94,0.2)',
-                                                    color: '#22c55e',
-                                                    borderRadius: '4px',
-                                                    fontSize: '14px',
-                                                    fontWeight: 600,
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    {notif.points} pts
-                                                </div>
-                                            )}
-                                            
                                             <div style={{ 
                                                 fontSize: '12px', 
-                                                color: 'var(--text-muted)' 
+                                                color: 'var(--text-muted)'
                                             }}>
                                                 {notif.time}
                                             </div>
                                         </div>
-
-                                        {(notif.type === 'team_invite' || notif.type === 'join_request') && !notif.accepted && (
-                                            <div style={{ 
-                                                display: 'flex', 
-                                                gap: '8px',
-                                                flexShrink: 0
-                                            }}>
-                                                <Button 
-                                                    size="sm" 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAccept(notif.id);
-                                                    }}
-                                                >
-                                                    ✓ Accepter
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="ghost"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDecline(notif.id);
-                                                    }}
-                                                >
-                                                    ✕ Refuser
-                                                </Button>
-                                            </div>
-                                        )}
-
-                                        {notif.accepted && (
-                                            <Badge color="#22c55e">Accepté ✓</Badge>
-                                        )}
+                                        
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            gap: '8px',
+                                            flexShrink: 0
+                                        }}>
+                                            <Button 
+                                                size="sm" 
+                                                onClick={() => handleAccept(notif.id)}
+                                            >
+                                                ✓ Accepter
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost"
+                                                onClick={() => handleDecline(notif.id)}
+                                            >
+                                                ✗ Refuser
+                                            </Button>
+                                        </div>
                                     </div>
                                 </Card>
                             ))}
-                        </div>
-                    )}
-
-                    {notifications.length > 0 && (
-                        <div style={{ 
-                            marginTop: '24px', 
-                            textAlign: 'center' 
-                        }}>
-                            <Button 
-                                variant="ghost" 
-                                onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
-                            >
-                                Tout marquer comme lu
-                            </Button>
                         </div>
                     )}
                 </div>
