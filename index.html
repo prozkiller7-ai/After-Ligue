@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <!-- Supabase pour la base de données en ligne -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -173,15 +173,16 @@
         const SUPABASE_URL = 'https://gxoyfllirrwsarpzmpvq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b3lmbGxpcnJ3c2FycHptcHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDY0ODcsImV4cCI6MjA4NTAyMjQ4N30.FEnjMRm5gU2FqTujsmRmmySuYh7rPdKCbe1m753ZZBg';
         
-        // Client Supabase (sera initialisé si les clés sont configurées)
+        // Client Supabase
         let supabase = null;
-        const SUPABASE_ENABLED = SUPABASE_URL !== 'https://XXXXX.supabase.co';
+        console.log('🔍 Recherche Supabase SDK...');
+        console.log('window.supabase:', window.supabase);
         
-        if (SUPABASE_ENABLED && window.supabase) {
+        if (window.supabase && window.supabase.createClient) {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase connecté');
-        } else if (!SUPABASE_ENABLED) {
-            console.log('ℹ️ Mode hors-ligne (localStorage). Configure Supabase pour synchroniser en ligne.');
+            console.log('✅ Supabase connecté!');
+        } else {
+            console.warn('⚠️ Supabase SDK non trouvé, mode localStorage uniquement');
         }
 
         // ============================================
