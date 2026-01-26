@@ -173,16 +173,33 @@
         const SUPABASE_URL = 'https://gxoyfllirrwsarpzmpvq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b3lmbGxpcnJ3c2FycHptcHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDY0ODcsImV4cCI6MjA4NTAyMjQ4N30.FEnjMRm5gU2FqTujsmRmmySuYh7rPdKCbe1m753ZZBg';
         
-        // Client Supabase
+        // Client Supabase - sera initialisé quand le SDK est prêt
         let supabase = null;
-        console.log('🔍 Recherche Supabase SDK...');
-        console.log('window.supabase:', window.supabase);
         
-        if (window.supabase && window.supabase.createClient) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase connecté!');
-        } else {
-            console.warn('⚠️ Supabase SDK non trouvé, mode localStorage uniquement');
+        // Fonction pour initialiser Supabase
+        const initSupabase = () => {
+            if (window.supabase && window.supabase.createClient) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connecté!');
+                return true;
+            }
+            return false;
+        };
+        
+        // Essayer d'initialiser maintenant
+        if (!initSupabase()) {
+            // Si pas prêt, attendre un peu et réessayer
+            console.log('⏳ Attente du SDK Supabase...');
+            let attempts = 0;
+            const waitForSupabase = setInterval(() => {
+                attempts++;
+                if (initSupabase()) {
+                    clearInterval(waitForSupabase);
+                } else if (attempts > 50) {
+                    clearInterval(waitForSupabase);
+                    console.warn('⚠️ Supabase SDK non disponible après 5s, mode localStorage');
+                }
+            }, 100);
         }
 
         // ============================================
