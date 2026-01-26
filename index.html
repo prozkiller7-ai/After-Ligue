@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFTER LIGUE - Ligue Multi-Jeux 2v2</title>
+    <!-- Supabase DOIT être chargé EN PREMIER -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script>
+        // Vérifier immédiatement si Supabase est chargé
+        if (window.supabase) {
+            console.log('✅ Supabase SDK chargé immédiatement!');
+        } else {
+            console.log('❌ Supabase pas encore là...');
+        }
+    </script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Supabase pour la base de données en ligne -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -173,33 +181,15 @@
         const SUPABASE_URL = 'https://gxoyfllirrwsarpzmpvq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b3lmbGxpcnJ3c2FycHptcHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDY0ODcsImV4cCI6MjA4NTAyMjQ4N30.FEnjMRm5gU2FqTujsmRmmySuYh7rPdKCbe1m753ZZBg';
         
-        // Client Supabase - sera initialisé quand le SDK est prêt
+        // Client Supabase
         let supabase = null;
         
-        // Fonction pour initialiser Supabase
-        const initSupabase = () => {
-            if (window.supabase && window.supabase.createClient) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase connecté!');
-                return true;
-            }
-            return false;
-        };
-        
-        // Essayer d'initialiser maintenant
-        if (!initSupabase()) {
-            // Si pas prêt, attendre un peu et réessayer
-            console.log('⏳ Attente du SDK Supabase...');
-            let attempts = 0;
-            const waitForSupabase = setInterval(() => {
-                attempts++;
-                if (initSupabase()) {
-                    clearInterval(waitForSupabase);
-                } else if (attempts > 50) {
-                    clearInterval(waitForSupabase);
-                    console.warn('⚠️ Supabase SDK non disponible après 5s, mode localStorage');
-                }
-            }, 100);
+        if (window.supabase && window.supabase.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase client créé!');
+        } else {
+            console.warn('⚠️ window.supabase =', window.supabase);
+            console.warn('⚠️ Mode localStorage uniquement');
         }
 
         // ============================================
