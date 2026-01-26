@@ -5648,15 +5648,60 @@
                 Storage.set('hasVisited', true);
             };
 
-            const login = (userData) => {
-                setUser({
+            const login = async (userData) => {
+                const newUser = {
                     ...userData,
                     status: 'solo',
                     partner: '',
                     availability: '',
                     levels: GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {}),
                     isAdmin: false
-                });
+                };
+                
+                // Sauvegarder dans Supabase
+                if (supabase) {
+                    try {
+                        // Vérifier si le joueur existe déjà
+                        const { data: existingPlayer } = await supabase
+                            .from('players')
+                            .select('*')
+                            .eq('discord_name', userData.discordName)
+                            .single();
+                        
+                        if (existingPlayer) {
+                            // Joueur existe déjà, récupérer ses données
+                            newUser.id = existingPlayer.id;
+                            newUser.status = existingPlayer.status || 'solo';
+                            newUser.partner = existingPlayer.partner || '';
+                            newUser.availability = existingPlayer.availability || '';
+                            newUser.levels = existingPlayer.levels || {};
+                            console.log('✅ Joueur existant récupéré:', userData.discordName);
+                        } else {
+                            // Nouveau joueur, l'ajouter
+                            const { data, error } = await supabase.from('players').insert({
+                                discord_name: userData.discordName,
+                                discord_id: userData.discordId || null,
+                                avatar_url: userData.avatar || null,
+                                status: 'solo',
+                                partner: null,
+                                availability: '',
+                                levels: GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
+                            }).select().single();
+                            
+                            if (data) {
+                                newUser.id = data.id;
+                                console.log('✅ Nouveau joueur créé:', userData.discordName);
+                            }
+                            if (error) {
+                                console.error('Erreur création joueur:', error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Erreur Supabase login:', error);
+                    }
+                }
+                
+                setUser(newUser);
                 Storage.set('currentUser', userData);
             };
 
@@ -5672,16 +5717,40 @@
 
             // Récupérer l'utilisateur au chargement
             useEffect(() => {
-                const savedUser = Storage.get('currentUser', null);
-                if (savedUser) {
-                    setUser({
-                        ...savedUser,
-                        status: 'solo',
-                        partner: '',
-                        availability: '',
-                        levels: GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
-                    });
-                }
+                const loadUser = async () => {
+                    const savedUser = Storage.get('currentUser', null);
+                    if (savedUser) {
+                        // Recharger depuis Supabase si disponible
+                        if (supabase) {
+                            const { data } = await supabase
+                                .from('players')
+                                .select('*')
+                                .eq('discord_name', savedUser.discordName)
+                                .single();
+                            
+                            if (data) {
+                                setUser({
+                                    ...savedUser,
+                                    id: data.id,
+                                    status: data.status || 'solo',
+                                    partner: data.partner || '',
+                                    availability: data.availability || '',
+                                    levels: data.levels || GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
+                                });
+                                return;
+                            }
+                        }
+                        
+                        setUser({
+                            ...savedUser,
+                            status: 'solo',
+                            partner: '',
+                            availability: '',
+                            levels: GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
+                        });
+                    }
+                };
+                loadUser();
             }, []);
 
             const authValue = { user, login, logout, updateUser };
