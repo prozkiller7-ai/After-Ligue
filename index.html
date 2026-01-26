@@ -7,18 +7,9 @@
     <!-- Supabase DOIT être chargé EN PREMIER -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
-        // Debug: voir tous les objets globaux liés à supabase
-        console.log('🔍 Debug Supabase:');
-        console.log('window.supabase:', window.supabase);
-        console.log('window.Supabase:', window.Supabase);
-        console.log('window.createClient:', window.createClient);
-        
-        // Chercher l'objet supabase
-        for (let key of Object.keys(window)) {
-            if (key.toLowerCase().includes('supa')) {
-                console.log('Trouvé:', key, '=', window[key]);
-            }
-        }
+        // Sauvegarder la référence Supabase AVANT que Babel ne s'exécute
+        window.SUPABASE_SDK = window.supabase;
+        console.log('✅ Supabase SDK sauvegardé:', !!window.SUPABASE_SDK);
     </script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -187,15 +178,14 @@
         const SUPABASE_URL = 'https://gxoyfllirrwsarpzmpvq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b3lmbGxpcnJ3c2FycHptcHZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDY0ODcsImV4cCI6MjA4NTAyMjQ4N30.FEnjMRm5gU2FqTujsmRmmySuYh7rPdKCbe1m753ZZBg';
         
-        // Client Supabase
+        // Client Supabase - utiliser la référence sauvegardée
         let supabase = null;
         
-        if (window.supabase && window.supabase.createClient) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase client créé!');
+        if (window.SUPABASE_SDK && window.SUPABASE_SDK.createClient) {
+            supabase = window.SUPABASE_SDK.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase client créé avec succès!');
         } else {
-            console.warn('⚠️ window.supabase =', window.supabase);
-            console.warn('⚠️ Mode localStorage uniquement');
+            console.warn('⚠️ SUPABASE_SDK non disponible, mode localStorage');
         }
 
         // ============================================
