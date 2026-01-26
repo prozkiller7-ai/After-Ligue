@@ -230,10 +230,6 @@
             tournamentStarted: false
         };
 
-        // Pour compatibilité avec l'ancien code
-        const DEMO_PLAYERS = INITIAL_PLAYERS;
-        const DEMO_TEAMS = INITIAL_TEAMS;
-
         // Contexte d'authentification
         const AuthContext = createContext(null);
         const useAuth = () => useContext(AuthContext);
@@ -1417,8 +1413,8 @@
                             textAlign: 'center'
                         }}>
                             {[
-                                { value: DEMO_PLAYERS.length, label: 'Joueurs inscrits' },
-                                { value: DEMO_TEAMS.length, label: 'Équipes formées' },
+                                { value: players.length, label: 'Joueurs inscrits' },
+                                { value: teams.length, label: 'Équipes formées' },
                                 { value: GAMES.length, label: 'Jeux disponibles' },
                                 { value: '∞', label: 'Fun garanti' }
                             ].map((stat, index) => (
@@ -2169,7 +2165,7 @@
                                 </p>
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
-                                    {DEMO_PLAYERS.filter(p => p.status === 'solo').map(player => (
+                                    {players.filter(p => p.status === 'solo' && p.discordName !== user?.discordName).map(player => (
                                         <div 
                                             key={player.id}
                                             style={{
@@ -2200,7 +2196,7 @@
                                                         <ClickablePlayer name={player.discordName} onClick={handlePlayerClick} />
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                                        {GAMES.filter(g => player.levels[g.id] > 0).slice(0, 3).map(game => (
+                                                        {GAMES.filter(g => (player.levels || {})[g.id] > 0).slice(0, 3).map(game => (
                                                             <span 
                                                                 key={game.id}
                                                                 style={{
@@ -2210,9 +2206,9 @@
                                                                 {game.emoji}
                                                             </span>
                                                         ))}
-                                                        {GAMES.filter(g => player.levels[g.id] > 0).length > 3 && (
+                                                        {GAMES.filter(g => (player.levels || {})[g.id] > 0).length > 3 && (
                                                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                                                                +{GAMES.filter(g => player.levels[g.id] > 0).length - 3}
+                                                                +{GAMES.filter(g => (player.levels || {})[g.id] > 0).length - 3}
                                                             </span>
                                                         )}
                                                     </div>
@@ -2228,7 +2224,7 @@
                                     ))}
                                 </div>
 
-                                {DEMO_PLAYERS.filter(p => p.status === 'solo').length === 0 && (
+                                {players.filter(p => p.status === 'solo' && p.discordName !== user?.discordName).length === 0 && (
                                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
                                         Aucun joueur solo disponible pour le moment
                                     </div>
@@ -2428,7 +2424,7 @@
                             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                             gap: '16px'
                         }}>
-                            {DEMO_PLAYERS.filter(p => p.status === 'solo').map((player, index) => (
+                            {players.filter(p => p.status === 'solo').map((player, index) => (
                                 <Card 
                                     key={player.id}
                                     style={{ animationDelay: `${index * 0.1}s` }}
@@ -2464,7 +2460,7 @@
                                         flexWrap: 'wrap',
                                         gap: '6px'
                                     }}>
-                                        {GAMES.filter(g => player.levels[g.id] > 0).map(game => (
+                                        {GAMES.filter(g => (player.levels || {})[g.id] > 0).map(game => (
                                             <span 
                                                 key={game.id}
                                                 style={{
@@ -2475,13 +2471,19 @@
                                                     color: game.color
                                                 }}
                                             >
-                                                {game.emoji} {LEVELS[player.levels[game.id]]?.label}
+                                                {game.emoji} {LEVELS[(player.levels || {})[game.id]]?.label}
                                             </span>
                                         ))}
                                     </div>
                                 </Card>
                             ))}
                         </div>
+
+                        {players.filter(p => p.status === 'solo').length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                Aucun joueur solo pour le moment
+                            </div>
+                        )}
                     </div>
                 </div>
             );
