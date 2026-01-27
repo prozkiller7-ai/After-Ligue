@@ -3910,8 +3910,8 @@
                         {[1, 0, 2].map((position) => {
                             const team = rankings[position];
                             if (!team) return null;
-                            const heights = ['260px', '210px', '170px'];
-                            const widths = ['200px', '220px', '200px'];
+                            const heights = ['320px', '260px', '210px'];
+                            const widths = ['200px', '230px', '200px'];
                             const medals = ['🥇', '🥈', '🥉'];
                             const actualPosition = [1, 0, 2].indexOf(position);
                             
@@ -3927,8 +3927,8 @@
                                     }}
                                 >
                                     <div style={{
-                                        fontSize: '48px',
-                                        marginBottom: '8px'
+                                        fontSize: '52px',
+                                        marginBottom: '10px'
                                     }}>
                                         {medals[position]}
                                     </div>
@@ -3947,11 +3947,11 @@
                                     }}>
                                         {/* Photo d'équipe */}
                                         <div style={{
-                                            width: position === 0 ? '80px' : '70px',
-                                            height: position === 0 ? '80px' : '70px',
-                                            borderRadius: '14px',
+                                            width: position === 0 ? '100px' : '85px',
+                                            height: position === 0 ? '100px' : '85px',
+                                            borderRadius: '16px',
                                             overflow: 'hidden',
-                                            marginBottom: '14px',
+                                            marginBottom: '16px',
                                             border: '3px solid var(--accent-cyan)',
                                             background: 'var(--bg-dark)',
                                             flexShrink: 0
