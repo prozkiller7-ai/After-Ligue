@@ -204,11 +204,11 @@
         ];
 
         const LEVELS = [
-            { id: 'none', label: 'Jamais', emoji: '❌', value: 0, color: '#666' },
-            { id: '30min', label: '30 min', emoji: '⏱️', value: 1, color: '#22c55e' },
-            { id: '10h', label: '10h', emoji: '🕐', value: 2, color: '#84cc16' },
-            { id: '50h', label: '50h', emoji: '🕑', value: 3, color: '#eab308' },
-            { id: '200h', label: '200h', emoji: '🕒', value: 4, color: '#f97316' },
+            { id: 'none', label: '❌', emoji: '❌', value: 0, color: '#ef4444' },
+            { id: '30min', label: '30min', emoji: '30min', value: 1, color: '#22c55e' },
+            { id: '10h', label: '10h', emoji: '10h', value: 2, color: '#84cc16' },
+            { id: '50h', label: '50h', emoji: '50h', value: 3, color: '#eab308' },
+            { id: '200h', label: '200h', emoji: '200h', value: 4, color: '#f97316' },
             { id: '500h', label: '500h+', emoji: '🔥', value: 5, color: '#ef4444' }
         ];
 
@@ -1293,18 +1293,20 @@
                             🏆 TOURNOI COMMUNAUTAIRE 2v2
                         </div>
                         
-                        <img 
-                            src="logo-after-ligue.svg" 
-                            alt="After Ligue 2v2" 
-                            style={{
-                                maxWidth: '350px',
-                                width: '80%',
-                                height: 'auto',
-                                marginBottom: '24px',
-                                filter: 'drop-shadow(0 0 40px rgba(0,240,255,0.5))',
-                                animation: 'float 4s ease-in-out infinite'
-                            }}
-                        />
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <img 
+                                src="logo-after-ligue.svg" 
+                                alt="After Ligue 2v2" 
+                                style={{
+                                    maxWidth: '320px',
+                                    width: '75%',
+                                    height: 'auto',
+                                    marginBottom: '24px',
+                                    filter: 'drop-shadow(0 0 40px rgba(0,240,255,0.5))',
+                                    animation: 'float 4s ease-in-out infinite'
+                                }}
+                            />
+                        </div>
                         
                         {/* Phrase d'accroche principale */}
                         <h1 style={{
@@ -1411,11 +1413,11 @@
                             <span style={{ color: 'var(--accent-violet)' }}>8</span> JEUX AU PROGRAMME
                         </h2>
 
-                        <div className="games-grid" style={{
+                        <div style={{
                             display: 'grid',
                             gridTemplateColumns: 'repeat(4, 1fr)',
-                            gap: '16px',
-                            maxWidth: '900px',
+                            gap: '12px',
+                            maxWidth: '800px',
                             margin: '0 auto'
                         }}>
                             {GAMES.map((game, index) => (
@@ -1427,19 +1429,20 @@
                                         overflow: 'hidden',
                                         aspectRatio: '16/10',
                                         cursor: 'pointer',
-                                        transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                                        border: '1px solid var(--border)'
                                     }}
-                                    className="animate-fade-in game-card"
+                                    className="animate-fade-in"
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'scale(1.05)';
-                                        e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+                                        e.currentTarget.style.transform = 'scale(1.03)';
+                                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'scale(1)';
                                         e.currentTarget.style.boxShadow = 'none';
                                     }}
                                 >
-                                    {/* Image de fond assombrie */}
+                                    {/* Image de fond */}
                                     <div style={{
                                         position: 'absolute',
                                         top: 0,
@@ -1448,39 +1451,35 @@
                                         bottom: 0,
                                         backgroundImage: `url(${game.image})`,
                                         backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        filter: 'brightness(0.4)'
+                                        backgroundPosition: 'center'
                                     }} />
                                     
-                                    {/* Overlay gradient */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        background: 'linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.7) 100%)'
-                                    }} />
-                                    
-                                    {/* Texte avec glow */}
+                                    {/* Overlay gradient en bas */}
                                     <div style={{
                                         position: 'absolute',
                                         bottom: 0,
                                         left: 0,
                                         right: 0,
-                                        padding: '16px',
+                                        height: '50%',
+                                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))'
+                                    }} />
+                                    
+                                    {/* Nom du jeu */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: '10px',
+                                        left: 0,
+                                        right: 0,
                                         textAlign: 'center'
                                     }}>
-                                        <div style={{ 
-                                            fontWeight: 700,
-                                            fontSize: '15px',
+                                        <span style={{ 
+                                            fontWeight: 600,
+                                            fontSize: '13px',
                                             color: '#fff',
-                                            textShadow: '0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.3)',
-                                            fontFamily: "'Orbitron', monospace",
-                                            letterSpacing: '0.05em'
+                                            textShadow: '0 2px 4px rgba(0,0,0,0.8)'
                                         }}>
                                             {game.name}
-                                        </div>
+                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -3733,54 +3732,110 @@
                         </p>
                     </div>
 
-                    {/* Filtres centrés */}
+                    {/* Filtres avec images - grille 4+4+1 centré */}
                     <div style={{
                         display: 'flex',
-                        gap: '8px',
-                        flexWrap: 'wrap',
-                        marginBottom: '32px',
-                        justifyContent: 'center'
+                        flexDirection: 'column',
+                        gap: '12px',
+                        marginBottom: '40px',
+                        alignItems: 'center'
                     }} className="animate-fade-in">
+                        {/* Bouton Général */}
                         <button
                             onClick={() => setSelectedGame('general')}
                             style={{
-                                padding: '10px 20px',
+                                padding: '14px 32px',
                                 background: selectedGame === 'general' ? 'var(--gradient-main)' : 'var(--bg-card)',
-                                border: `1px solid ${selectedGame === 'general' ? 'transparent' : 'var(--border)'}`,
-                                borderRadius: '6px',
-                                color: selectedGame === 'general' ? 'var(--bg-dark)' : 'var(--text-secondary)',
+                                border: `2px solid ${selectedGame === 'general' ? 'var(--accent-cyan)' : 'var(--border)'}`,
+                                borderRadius: '12px',
+                                color: selectedGame === 'general' ? 'var(--bg-dark)' : 'var(--text-primary)',
                                 cursor: 'pointer',
-                                fontFamily: "'Rajdhani', sans-serif",
-                                fontWeight: 600,
-                                fontSize: '14px',
-                                transition: 'all 0.2s ease'
+                                fontFamily: "'Orbitron', monospace",
+                                fontWeight: 700,
+                                fontSize: '16px',
+                                transition: 'all 0.3s ease',
+                                boxShadow: selectedGame === 'general' ? '0 0 20px rgba(0,240,255,0.4)' : 'none'
                             }}
                         >
-                            🏆 Général
+                            🏆 CLASSEMENT GÉNÉRAL
                         </button>
-                        {GAMES.map(game => (
-                            <button
-                                key={game.id}
-                                onClick={() => setSelectedGame(game.id)}
-                                style={{
-                                    padding: '10px 16px',
-                                    background: selectedGame === game.id ? `${game.color}22` : 'var(--bg-card)',
-                                    border: `1px solid ${selectedGame === game.id ? game.color : 'var(--border)'}`,
-                                    borderRadius: '6px',
-                                    color: selectedGame === game.id ? game.color : 'var(--text-secondary)',
-                                    cursor: 'pointer',
-                                    fontFamily: "'Rajdhani', sans-serif",
-                                    fontWeight: 500,
-                                    fontSize: '14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                {game.emoji} {game.name}
-                            </button>
-                        ))}
+                        
+                        {/* Grille des jeux 4x2 */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: '12px',
+                            maxWidth: '700px',
+                            width: '100%'
+                        }}>
+                            {GAMES.map(game => (
+                                <button
+                                    key={game.id}
+                                    onClick={() => setSelectedGame(game.id)}
+                                    style={{
+                                        position: 'relative',
+                                        padding: 0,
+                                        height: '80px',
+                                        background: 'transparent',
+                                        border: `2px solid ${selectedGame === game.id ? 'var(--accent-cyan)' : 'transparent'}`,
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: selectedGame === game.id ? '0 0 15px rgba(0,240,255,0.4)' : 'none'
+                                    }}
+                                >
+                                    {/* Image de fond assombrie */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        backgroundImage: `url(${game.image})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        filter: selectedGame === game.id ? 'brightness(0.6)' : 'brightness(0.35)'
+                                    }} />
+                                    
+                                    {/* Overlay sombre */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%)'
+                                    }} />
+                                    
+                                    {/* Texte avec glow blanc */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <span style={{ 
+                                            fontWeight: 700,
+                                            fontSize: '13px',
+                                            color: '#fff',
+                                            textShadow: selectedGame === game.id 
+                                                ? '0 0 10px rgba(255,255,255,1), 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(0,240,255,0.6)'
+                                                : '0 0 8px rgba(255,255,255,0.8), 0 0 15px rgba(255,255,255,0.5)',
+                                            fontFamily: "'Rajdhani', sans-serif",
+                                            letterSpacing: '0.05em',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {game.name}
+                                        </span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Podium */}
@@ -3788,14 +3843,14 @@
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'flex-end',
-                        gap: '16px',
+                        gap: '20px',
                         marginBottom: '48px',
                         padding: '20px'
                     }} className="animate-fade-in">
                         {[1, 0, 2].map((position) => {
                             const team = rankings[position];
                             if (!team) return null;
-                            const heights = ['200px', '160px', '120px'];
+                            const heights = ['220px', '180px', '140px'];
                             const medals = ['🥇', '🥈', '🥉'];
                             const actualPosition = [1, 0, 2].indexOf(position);
                             
