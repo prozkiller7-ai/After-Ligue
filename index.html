@@ -1818,6 +1818,9 @@
             const [teamImage, setTeamImage] = useState(null);
             const [requestSent, setRequestSent] = useState(false);
             const [teamCreated, setTeamCreated] = useState(false);
+            const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+            const [editTeamName, setEditTeamName] = useState('');
+            const [editTeamImage, setEditTeamImage] = useState(null);
 
             const handlePlayerClick = (playerName) => {
                 const player = players.find(p => p.discordName === playerName);
@@ -1858,6 +1861,38 @@
                     };
                     reader.readAsDataURL(file);
                 }
+            };
+
+            const handleEditTeamImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setEditTeamImage(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const openEditTeamModal = () => {
+                if (userTeam) {
+                    setEditTeamName(userTeam.name);
+                    setEditTeamImage(userTeam.image);
+                    setShowEditTeamModal(true);
+                }
+            };
+
+            const handleSaveTeamEdit = async () => {
+                if (!userTeam || !editTeamName.trim()) return;
+                
+                const updates = {
+                    name: editTeamName.toUpperCase(),
+                    image: editTeamImage || userTeam.image
+                };
+                
+                await updateTeam(userTeam.id, updates);
+                setShowEditTeamModal(false);
+                alert('Équipe modifiée avec succès ! ✅');
             };
 
             const handleCreateTeam = () => {
@@ -2005,9 +2040,14 @@
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>POINTS</div>
                                         <div style={{ fontFamily: "'Orbitron', monospace", fontSize: '24px', fontWeight: 700, color: 'var(--accent-cyan)' }}>
-                                            {Object.values(userTeam.points).reduce((a, b) => a + b, 0)}
+                                            {Object.values(userTeam.points || {}).reduce((a, b) => a + b, 0)}
                                         </div>
                                     </div>
+                                    {userTeam.players[0] === user.discordName && (
+                                        <Button variant="ghost" size="sm" onClick={openEditTeamModal}>
+                                            ✏️ Modifier
+                                        </Button>
+                                    )}
                                     {settings.tournamentStarted ? (
                                         <Badge color="var(--text-muted)">🔒 Verrouillé</Badge>
                                     ) : (
@@ -2192,6 +2232,106 @@
                                 </Button>
                             </>
                         )}
+                    </Modal>
+
+                    {/* Modal Modifier équipe */}
+                    <Modal 
+                        show={showEditTeamModal} 
+                        onClose={() => setShowEditTeamModal(false)}
+                        title="✏️ Modifier l'équipe"
+                    >
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: '12px',
+                                fontSize: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                Photo de l'équipe
+                            </label>
+                            <div style={{ 
+                                position: 'relative', 
+                                width: '100px', 
+                                height: '100px',
+                                margin: '0 auto'
+                            }}>
+                                <div style={{
+                                    width: '100px',
+                                    height: '100px',
+                                    borderRadius: '12px',
+                                    background: editTeamImage ? `url(${editTeamImage}) center/cover` : 'var(--bg-dark)',
+                                    border: '2px dashed var(--border)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column',
+                                    gap: '4px'
+                                }}>
+                                    {!editTeamImage && (
+                                        <>
+                                            <span style={{ fontSize: '24px' }}>📷</span>
+                                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Changer</span>
+                                        </>
+                                    )}
+                                </div>
+                                <label style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    cursor: 'pointer'
+                                }}>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={handleEditTeamImageUpload}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: '8px',
+                                fontSize: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                Nom de l'équipe
+                            </label>
+                            <input
+                                type="text"
+                                value={editTeamName}
+                                onChange={(e) => setEditTeamName(e.target.value)}
+                                placeholder="Nom de l'équipe"
+                                style={{
+                                    width: '100%',
+                                    padding: '14px 16px',
+                                    background: 'var(--bg-dark)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '16px',
+                                    fontFamily: "'Rajdhani', sans-serif",
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em'
+                                }}
+                            />
+                        </div>
+                        
+                        <Button 
+                            onClick={handleSaveTeamEdit}
+                            disabled={!editTeamName.trim()}
+                            style={{ width: '100%' }}
+                        >
+                            💾 Enregistrer
+                        </Button>
                     </Modal>
 
                     {/* Modal Inviter un joueur */}
@@ -2555,24 +2695,52 @@
                         return;
                     }
                     
-                    const { data, error } = await supabase
+                    // Charger les invitations en attente
+                    const { data: pendingInvites } = await supabase
                         .from('team_invitations')
                         .select('*')
                         .eq('to_player', user.discordName)
                         .eq('status', 'pending')
                         .order('created_at', { ascending: false });
                     
-                    if (data) {
-                        setInvitations(data.map(inv => ({
+                    // Charger les notifications de match
+                    const { data: matchNotifs } = await supabase
+                        .from('team_invitations')
+                        .select('*')
+                        .eq('to_player', user.discordName)
+                        .eq('status', 'match_result')
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+                    
+                    const allNotifications = [];
+                    
+                    if (pendingInvites) {
+                        allNotifications.push(...pendingInvites.map(inv => ({
                             id: inv.id,
                             type: 'team_invite',
                             from: inv.from_player,
                             teamName: inv.team_name,
                             message: 'veut créer une équipe avec toi',
                             time: new Date(inv.created_at).toLocaleString('fr-FR'),
-                            read: false
+                            read: false,
+                            status: inv.status
                         })));
                     }
+                    
+                    if (matchNotifs) {
+                        allNotifications.push(...matchNotifs.map(inv => ({
+                            id: inv.id,
+                            type: 'match_result',
+                            from: inv.from_player,
+                            teamName: inv.team_name,
+                            message: '',
+                            time: new Date(inv.created_at).toLocaleString('fr-FR'),
+                            read: true,
+                            status: inv.status
+                        })));
+                    }
+                    
+                    setInvitations(allNotifications);
                     setLoading(false);
                 };
                 
@@ -2652,6 +2820,16 @@
                 setInvitations(prev => prev.filter(i => i.id !== invitationId));
             };
 
+            const handleDismissMatchNotif = async (notifId) => {
+                if (!supabase) return;
+                
+                await supabase.from('team_invitations')
+                    .delete()
+                    .eq('id', notifId);
+                
+                setInvitations(prev => prev.filter(i => i.id !== notifId));
+            };
+
             const getNotificationIcon = (type) => {
                 switch(type) {
                     case 'team_invite': return '👥';
@@ -2678,7 +2856,7 @@
                             🔔 Notifications
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                            {invitations.length} invitation(s) en attente
+                            {invitations.filter(i => i.status === 'pending').length} invitation(s) en attente
                         </p>
                     </div>
 
@@ -2696,7 +2874,9 @@
                                     key={notif.id}
                                     style={{ 
                                         animationDelay: `${index * 0.05}s`,
-                                        borderLeft: '3px solid var(--accent-cyan)'
+                                        borderLeft: notif.type === 'match_result' 
+                                            ? '3px solid var(--accent-violet)' 
+                                            : '3px solid var(--accent-cyan)'
                                     }}
                                     className="animate-fade-in"
                                 >
@@ -2709,7 +2889,9 @@
                                         <div style={{
                                             width: '50px',
                                             height: '50px',
-                                            background: 'rgba(0,240,255,0.1)',
+                                            background: notif.type === 'match_result' 
+                                                ? 'rgba(168,85,247,0.1)' 
+                                                : 'rgba(0,240,255,0.1)',
                                             borderRadius: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -2721,23 +2903,41 @@
                                         </div>
                                         
                                         <div style={{ flex: 1, minWidth: '200px' }}>
-                                            <div style={{ marginBottom: '8px' }}>
-                                                <span style={{ 
-                                                    fontWeight: 600, 
-                                                    color: 'var(--accent-cyan)'
-                                                }}>
-                                                    {notif.from}
-                                                </span>
-                                                {' '}{notif.message}
-                                                {notif.teamName && (
+                                            {notif.type === 'match_result' ? (
+                                                <div style={{ marginBottom: '8px' }}>
+                                                    <div style={{ 
+                                                        fontWeight: 600, 
+                                                        color: 'var(--text-primary)',
+                                                        marginBottom: '4px'
+                                                    }}>
+                                                        🏆 Résultat de match
+                                                    </div>
+                                                    <div style={{ 
+                                                        color: 'var(--accent-violet)',
+                                                        fontSize: '14px'
+                                                    }}>
+                                                        {notif.teamName}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ marginBottom: '8px' }}>
                                                     <span style={{ 
                                                         fontWeight: 600, 
-                                                        color: 'var(--accent-violet)'
+                                                        color: 'var(--accent-cyan)'
                                                     }}>
-                                                        {' '}({notif.teamName})
+                                                        {notif.from}
                                                     </span>
-                                                )}
-                                            </div>
+                                                    {' '}{notif.message}
+                                                    {notif.teamName && (
+                                                        <span style={{ 
+                                                            fontWeight: 600, 
+                                                            color: 'var(--accent-violet)'
+                                                        }}>
+                                                            {' '}({notif.teamName})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                             <div style={{ 
                                                 fontSize: '12px', 
                                                 color: 'var(--text-muted)'
@@ -2746,10 +2946,11 @@
                                             </div>
                                         </div>
                                         
-                                        <div style={{ 
-                                            display: 'flex', 
-                                            gap: '8px',
-                                            flexShrink: 0
+                                        {notif.type === 'team_invite' && (
+                                            <div style={{ 
+                                                display: 'flex', 
+                                                gap: '8px',
+                                                flexShrink: 0
                                         }}>
                                             <Button 
                                                 size="sm" 
@@ -2765,6 +2966,17 @@
                                                 ✗ Refuser
                                             </Button>
                                         </div>
+                                        )}
+                                        
+                                        {notif.type === 'match_result' && (
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost"
+                                                onClick={() => handleDismissMatchNotif(notif.id)}
+                                            >
+                                                ✓ OK
+                                            </Button>
+                                        )}
                                     </div>
                                 </Card>
                             ))}
@@ -5073,21 +5285,84 @@
             const getGameEmoji = (id) => GAMES.find(g => g.id === id)?.emoji || '🎮';
             const getGameColor = (id) => GAMES.find(g => g.id === id)?.color || '#888';
 
-            const handleDeclareMatch = () => {
+            const handleDeclareMatch = async () => {
                 if (!newMatch.team2Id || !newMatch.gameId || !newMatch.winner) {
                     alert('Remplis tous les champs');
                     return;
                 }
+                
+                const team1 = userTeam;
+                const team2 = teams.find(t => t.id === newMatch.team2Id);
+                const game = GAMES.find(g => g.id === newMatch.gameId);
+                
+                // Déterminer les points
+                let team1Points = 0;
+                let team2Points = 0;
+                
+                if (newMatch.winner === 'team1') {
+                    team1Points = POINTS_SYSTEM.win;
+                    team2Points = POINTS_SYSTEM.lose;
+                } else if (newMatch.winner === 'team2') {
+                    team1Points = POINTS_SYSTEM.lose;
+                    team2Points = POINTS_SYSTEM.win;
+                } else {
+                    team1Points = POINTS_SYSTEM.draw;
+                    team2Points = POINTS_SYSTEM.draw;
+                }
+                
+                // Ajouter le match
                 addMatch({
                     ...newMatch,
                     team1Id: userTeam.id,
                     declaredBy: user.discordName
                 });
+                
+                // Mettre à jour les points des équipes dans Supabase
+                if (supabase && team1 && team2) {
+                    // Team 1
+                    const newTeam1Points = { ...(team1.points || {}) };
+                    newTeam1Points[newMatch.gameId] = (newTeam1Points[newMatch.gameId] || 0) + team1Points;
+                    await supabase.from('teams').update({ points: newTeam1Points }).eq('id', team1.id);
+                    
+                    // Team 2
+                    const newTeam2Points = { ...(team2.points || {}) };
+                    newTeam2Points[newMatch.gameId] = (newTeam2Points[newMatch.gameId] || 0) + team2Points;
+                    await supabase.from('teams').update({ points: newTeam2Points }).eq('id', team2.id);
+                    
+                    // Envoyer notification à l'équipe adverse
+                    const winnerText = newMatch.winner === 'team1' ? 
+                        `${team1.name} a gagné` : 
+                        (newMatch.winner === 'team2' ? `${team2.name} a gagné` : 'Match nul');
+                    
+                    // Notification pour l'équipe 2
+                    for (const playerName of team2.players) {
+                        await supabase.from('team_invitations').insert({
+                            from_player: 'SYSTÈME',
+                            to_player: playerName,
+                            team_name: `${game?.emoji || '🎮'} ${game?.name || 'Match'}: ${winnerText} | ${team2.name}: ${team2Points > 0 ? '+' : ''}${team2Points} pts`,
+                            status: 'match_result'
+                        });
+                    }
+                    
+                    // Notification pour l'équipe 1 aussi (sauf le déclarant)
+                    for (const playerName of team1.players) {
+                        if (playerName !== user.discordName) {
+                            await supabase.from('team_invitations').insert({
+                                from_player: 'SYSTÈME',
+                                to_player: playerName,
+                                team_name: `${game?.emoji || '🎮'} ${game?.name || 'Match'}: ${winnerText} | ${team1.name}: ${team1Points > 0 ? '+' : ''}${team1Points} pts`,
+                                status: 'match_result'
+                            });
+                        }
+                    }
+                }
+                
                 setMatchDeclared(true);
                 setTimeout(() => {
                     setShowDeclareModal(false);
                     setMatchDeclared(false);
                     setNewMatch({ team1Id: '', team2Id: '', gameId: '', winner: '' });
+                    window.location.reload(); // Recharger pour voir les points mis à jour
                 }, 2000);
             };
 
