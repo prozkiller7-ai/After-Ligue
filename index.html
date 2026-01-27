@@ -1531,27 +1531,424 @@
 
         const LoginPage = ({ setCurrentPage }) => {
             const { login } = useAuth();
-            const [discordName, setDiscordName] = useState('');
+            const { players } = useData();
+            const [mode, setMode] = useState('choice'); // 'choice', 'login', 'register'
+            const [pseudo, setPseudo] = useState('');
+            const [pin, setPin] = useState(['', '', '', '']);
+            const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
             const [success, setSuccess] = useState(false);
+            const [step, setStep] = useState(1); // Pour l'inscription: 1=pseudo, 2=pin, 3=confirm
+            const pinRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
+            const confirmPinRefs = [React.useRef(), React.useRef(), React.useRef(), React.useRef()];
 
-            const handleLogin = () => {
-                if (!discordName.trim()) {
-                    setError('Entre ton pseudo Discord');
-                    return;
-                }
-                setError('');
-                setLoading(true);
-                setTimeout(() => {
-                    setSuccess(true);
-                    setTimeout(() => {
-                        login({ discordName: discordName.trim() });
-                        setCurrentPage('profile');
-                    }, 800);
-                }, 600);
+            // Composant PIN Pad
+            const PinPad = ({ values, onChange, refs, label }) => {
+                const handleDigitClick = (digit) => {
+                    const emptyIndex = values.findIndex(v => v === '');
+                    if (emptyIndex !== -1) {
+                        const newValues = [...values];
+                        newValues[emptyIndex] = digit;
+                        onChange(newValues);
+                    }
+                };
+
+                const handleDelete = () => {
+                    const lastFilledIndex = values.map((v, i) => v !== '' ? i : -1).filter(i => i !== -1).pop();
+                    if (lastFilledIndex !== undefined) {
+                        const newValues = [...values];
+                        newValues[lastFilledIndex] = '';
+                        onChange(newValues);
+                    }
+                };
+
+                return (
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '16px',
+                            fontSize: '14px',
+                            textAlign: 'center',
+                            color: 'var(--text-secondary)'
+                        }}>
+                            {label}
+                        </label>
+                        
+                        {/* Affichage des points */}
+                        <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            gap: '16px', 
+                            marginBottom: '24px' 
+                        }}>
+                            {values.map((val, i) => (
+                                <div key={i} style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    background: val ? 'var(--accent-cyan)' : 'var(--bg-dark)',
+                                    border: '2px solid var(--accent-cyan)',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: val ? '0 0 10px var(--accent-cyan)' : 'none'
+                                }} />
+                            ))}
+                        </div>
+
+                        {/* Clavier numérique */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '12px',
+                            maxWidth: '240px',
+                            margin: '0 auto'
+                        }}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, 'del'].map((digit, i) => (
+                                digit === null ? <div key={i} /> : (
+                                    <button
+                                        key={i}
+                                        onClick={() => digit === 'del' ? handleDelete() : handleDigitClick(String(digit))}
+                                        style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            borderRadius: '50%',
+                                            border: '2px solid var(--border)',
+                                            background: 'var(--bg-dark)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: digit === 'del' ? '20px' : '24px',
+                                            fontFamily: "'Orbitron', monospace",
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.borderColor = 'var(--accent-cyan)';
+                                            e.target.style.background = 'rgba(0,240,255,0.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.borderColor = 'var(--border)';
+                                            e.target.style.background = 'var(--bg-dark)';
+                                        }}
+                                    >
+                                        {digit === 'del' ? '⌫' : digit}
+                                    </button>
+                                )
+                            ))}
+                        </div>
+                    </div>
+                );
             };
 
+            // Vérifier si pseudo existe
+            const checkPseudoExists = (name) => {
+                return players.some(p => p.discordName.toLowerCase() === name.toLowerCase());
+            };
+
+            // Connexion
+            const handleLogin = async () => {
+                if (!pseudo.trim()) {
+                    setError('Entre ton pseudo');
+                    return;
+                }
+                const pinCode = pin.join('');
+                if (pinCode.length !== 4) {
+                    setError('Entre ton code PIN à 4 chiffres');
+                    return;
+                }
+
+                setLoading(true);
+                setError('');
+
+                // Vérifier dans Supabase
+                if (supabase) {
+                    const { data: player } = await supabase
+                        .from('players')
+                        .select('*')
+                        .ilike('discord_name', pseudo.trim())
+                        .single();
+
+                    if (!player) {
+                        setError('Pseudo introuvable');
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (player.pin_code !== pinCode) {
+                        setError('Code PIN incorrect');
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Connexion réussie
+                    setSuccess(true);
+                    setTimeout(() => {
+                        login({ 
+                            discordName: player.discord_name,
+                            id: player.id,
+                            profileImage: player.avatar_url
+                        });
+                        setCurrentPage('home');
+                    }, 800);
+                } else {
+                    setError('Erreur de connexion à la base de données');
+                    setLoading(false);
+                }
+            };
+
+            // Inscription
+            const handleRegister = async () => {
+                if (step === 1) {
+                    // Vérifier pseudo
+                    if (!pseudo.trim()) {
+                        setError('Entre un pseudo');
+                        return;
+                    }
+                    if (pseudo.trim().length < 3) {
+                        setError('Pseudo trop court (min 3 caractères)');
+                        return;
+                    }
+                    if (checkPseudoExists(pseudo.trim())) {
+                        setError('Ce pseudo est déjà pris !');
+                        return;
+                    }
+                    setError('');
+                    setStep(2);
+                } else if (step === 2) {
+                    // Vérifier PIN
+                    const pinCode = pin.join('');
+                    if (pinCode.length !== 4) {
+                        setError('Entre un code PIN à 4 chiffres');
+                        return;
+                    }
+                    setError('');
+                    setStep(3);
+                } else if (step === 3) {
+                    // Confirmer PIN
+                    const pinCode = pin.join('');
+                    const confirmCode = confirmPin.join('');
+                    if (confirmCode !== pinCode) {
+                        setError('Les codes PIN ne correspondent pas');
+                        setConfirmPin(['', '', '', '']);
+                        return;
+                    }
+
+                    setLoading(true);
+                    setError('');
+
+                    // Créer le compte dans Supabase
+                    if (supabase) {
+                        const { data, error: dbError } = await supabase.from('players').insert({
+                            discord_name: pseudo.trim(),
+                            pin_code: pinCode,
+                            status: 'solo',
+                            levels: GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
+                        }).select().single();
+
+                        if (dbError) {
+                            setError('Erreur lors de la création du compte');
+                            setLoading(false);
+                            return;
+                        }
+
+                        setSuccess(true);
+                        setTimeout(() => {
+                            login({ 
+                                discordName: data.discord_name,
+                                id: data.id
+                            });
+                            setCurrentPage('profile');
+                        }, 800);
+                    }
+                }
+            };
+
+            // Écran de choix
+            if (mode === 'choice') {
+                return (
+                    <div style={{
+                        minHeight: 'calc(100vh - 80px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '24px'
+                    }}>
+                        <Card style={{ maxWidth: '400px', width: '100%' }} className="animate-fade-in">
+                            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                                <div style={{
+                                    width: '100px',
+                                    height: '100px',
+                                    margin: '0 auto 24px',
+                                    background: 'linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-violet) 100%)',
+                                    borderRadius: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '48px',
+                                    boxShadow: '0 0 30px rgba(0,240,255,0.3)'
+                                }}>
+                                    🎮
+                                </div>
+                                <h2 style={{ fontSize: '28px', marginBottom: '8px', fontFamily: "'Orbitron', monospace" }}>
+                                    AFTER LEAGUE
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                    Tournoi communautaire 2v2
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <Button 
+                                    size="lg" 
+                                    onClick={() => setMode('login')}
+                                    style={{ width: '100%' }}
+                                >
+                                    🔑 Se connecter
+                                </Button>
+                                <Button 
+                                    variant="secondary" 
+                                    size="lg" 
+                                    onClick={() => setMode('register')}
+                                    style={{ width: '100%' }}
+                                >
+                                    ✨ Créer un compte
+                                </Button>
+                            </div>
+
+                            <p style={{
+                                marginTop: '24px',
+                                textAlign: 'center',
+                                fontSize: '12px',
+                                color: 'var(--text-muted)'
+                            }}>
+                                En continuant, tu acceptes le{' '}
+                                <span 
+                                    onClick={() => setCurrentPage('rules')}
+                                    style={{ color: 'var(--accent-cyan)', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                    règlement
+                                </span>
+                            </p>
+                        </Card>
+                    </div>
+                );
+            }
+
+            // Écran de succès
+            if (success) {
+                return (
+                    <div style={{
+                        minHeight: 'calc(100vh - 80px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '24px'
+                    }}>
+                        <Card style={{ maxWidth: '400px', width: '100%' }} className="animate-fade-in">
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <div style={{ fontSize: '72px', marginBottom: '16px' }}>✅</div>
+                                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: '#22c55e' }}>
+                                    {mode === 'register' ? 'Compte créé !' : 'Connexion réussie !'}
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)' }}>
+                                    Bienvenue dans l'After League
+                                </p>
+                            </div>
+                        </Card>
+                    </div>
+                );
+            }
+
+            // Écran de connexion
+            if (mode === 'login') {
+                return (
+                    <div style={{
+                        minHeight: 'calc(100vh - 80px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '24px'
+                    }}>
+                        <Card style={{ maxWidth: '400px', width: '100%' }} className="animate-fade-in">
+                            <button 
+                                onClick={() => { setMode('choice'); setError(''); setPseudo(''); setPin(['','','','']); }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    marginBottom: '16px'
+                                }}
+                            >
+                                ← Retour
+                            </button>
+
+                            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>🔑 Connexion</h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                    Entre ton pseudo et ton code PIN
+                                </p>
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '8px',
+                                    fontSize: '12px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    color: 'var(--text-secondary)'
+                                }}>
+                                    Pseudo
+                                </label>
+                                <input
+                                    type="text"
+                                    value={pseudo}
+                                    onChange={(e) => { setPseudo(e.target.value); setError(''); }}
+                                    placeholder="Ton pseudo"
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 16px',
+                                        background: 'var(--bg-dark)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '16px',
+                                        fontFamily: "'Rajdhani', sans-serif",
+                                        textAlign: 'center'
+                                    }}
+                                />
+                            </div>
+
+                            <PinPad 
+                                values={pin} 
+                                onChange={setPin} 
+                                refs={pinRefs}
+                                label="Code PIN"
+                            />
+
+                            {error && (
+                                <p style={{ color: '#ef4444', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
+                                    ⚠️ {error}
+                                </p>
+                            )}
+
+                            <Button 
+                                onClick={handleLogin} 
+                                disabled={loading || pin.join('').length !== 4}
+                                style={{ width: '100%' }}
+                                size="lg"
+                            >
+                                {loading ? '⏳ Connexion...' : '🚀 Se connecter'}
+                            </Button>
+                        </Card>
+                    </div>
+                );
+            }
+
+            // Écran d'inscription
             return (
                 <div style={{
                     minHeight: 'calc(100vh - 80px)',
@@ -1561,112 +1958,126 @@
                     padding: '24px'
                 }}>
                     <Card style={{ maxWidth: '400px', width: '100%' }} className="animate-fade-in">
-                        {success ? (
-                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
-                                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: '#22c55e' }}>
-                                    Inscription réussie !
-                                </h2>
-                                <p style={{ color: 'var(--text-secondary)' }}>
-                                    Bienvenue dans l'After League
+                        <button 
+                            onClick={() => { 
+                                if (step > 1) {
+                                    setStep(step - 1);
+                                    if (step === 3) setConfirmPin(['','','','']);
+                                } else {
+                                    setMode('choice'); 
+                                    setError(''); 
+                                    setPseudo(''); 
+                                    setPin(['','','','']);
+                                }
+                            }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                marginBottom: '16px'
+                            }}
+                        >
+                            ← Retour
+                        </button>
+
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>✨ Créer un compte</h2>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                Étape {step}/3 — {step === 1 ? 'Choisis ton pseudo' : step === 2 ? 'Crée ton code PIN' : 'Confirme ton code PIN'}
+                            </p>
+                            
+                            {/* Progress bar */}
+                            <div style={{ 
+                                display: 'flex', 
+                                gap: '8px', 
+                                justifyContent: 'center',
+                                marginTop: '16px'
+                            }}>
+                                {[1, 2, 3].map(s => (
+                                    <div key={s} style={{
+                                        width: '60px',
+                                        height: '4px',
+                                        borderRadius: '2px',
+                                        background: s <= step ? 'var(--accent-cyan)' : 'var(--bg-dark)'
+                                    }} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {step === 1 && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '8px',
+                                    fontSize: '12px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                    color: 'var(--text-secondary)'
+                                }}>
+                                    Pseudo (unique)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={pseudo}
+                                    onChange={(e) => { setPseudo(e.target.value); setError(''); }}
+                                    placeholder="Choisis ton pseudo"
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 16px',
+                                        background: 'var(--bg-dark)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '16px',
+                                        fontFamily: "'Rajdhani', sans-serif",
+                                        textAlign: 'center'
+                                    }}
+                                />
+                                <p style={{ 
+                                    fontSize: '12px', 
+                                    color: 'var(--text-muted)', 
+                                    marginTop: '8px',
+                                    textAlign: 'center'
+                                }}>
+                                    Ce sera ton nom visible par tous
                                 </p>
                             </div>
-                        ) : (
-                            <>
-                                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                                    <div style={{
-                                        width: '80px',
-                                        height: '80px',
-                                        margin: '0 auto 24px',
-                                        background: 'linear-gradient(135deg, #5865F2 0%, #7289DA 100%)',
-                                        borderRadius: '16px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '40px'
-                                    }}>
-                                        🎮
-                                    </div>
-                                    <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>Rejoindre le tournoi</h2>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                                        Connecte-toi pour participer à l'After League
-                                    </p>
-                                </div>
-
-                                <div style={{ marginBottom: '24px' }}>
-                                    <label style={{
-                                        display: 'block',
-                                        marginBottom: '8px',
-                                        fontSize: '12px',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.1em',
-                                        color: 'var(--text-secondary)'
-                                    }}>
-                                        Pseudo Discord
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={discordName}
-                                        onChange={(e) => { setDiscordName(e.target.value); setError(''); }}
-                                        placeholder="ex: Dodo#1234"
-                                        style={{
-                                            width: '100%',
-                                            padding: '14px 16px',
-                                            background: 'var(--bg-dark)',
-                                            border: `1px solid ${error ? '#ef4444' : 'var(--border)'}`,
-                                            borderRadius: '6px',
-                                            color: 'var(--text-primary)',
-                                            fontSize: '16px',
-                                            fontFamily: "'Rajdhani', sans-serif",
-                                            outline: 'none',
-                                            transition: 'border-color 0.2s ease'
-                                        }}
-                                        onFocus={(e) => e.target.style.borderColor = error ? '#ef4444' : 'var(--accent-cyan)'}
-                                        onBlur={(e) => e.target.style.borderColor = error ? '#ef4444' : 'var(--border)'}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                                    />
-                                    {error && (
-                                        <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px' }}>
-                                            ⚠️ {error}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <Button 
-                                    onClick={handleLogin} 
-                                    disabled={loading}
-                                    style={{ width: '100%' }}
-                                    size="lg"
-                                >
-                                    {loading ? '⏳ Connexion en cours...' : '🚀 S\'inscrire'}
-                                </Button>
-
-                                <p style={{
-                                    marginTop: '16px',
-                                    textAlign: 'center',
-                                    fontSize: '12px',
-                                    color: 'var(--text-muted)'
-                                }}>
-                                    En t'inscrivant, tu acceptes le{' '}
-                                    <span 
-                                        onClick={() => setCurrentPage('rules')}
-                                        style={{ color: 'var(--accent-cyan)', cursor: 'pointer', textDecoration: 'underline' }}
-                                    >
-                                        règlement
-                                    </span>
-                                </p>
-
-                                <p style={{
-                                    marginTop: '16px',
-                                    textAlign: 'center',
-                                    fontSize: '11px',
-                                    color: 'var(--text-muted)',
-                                    opacity: 0.7
-                                }}>
-                                    Version démo • OAuth Discord sera activé en production
-                                </p>
-                            </>
                         )}
+
+                        {step === 2 && (
+                            <PinPad 
+                                values={pin} 
+                                onChange={setPin} 
+                                refs={pinRefs}
+                                label="Crée ton code PIN à 4 chiffres"
+                            />
+                        )}
+
+                        {step === 3 && (
+                            <PinPad 
+                                values={confirmPin} 
+                                onChange={setConfirmPin} 
+                                refs={confirmPinRefs}
+                                label="Confirme ton code PIN"
+                            />
+                        )}
+
+                        {error && (
+                            <p style={{ color: '#ef4444', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>
+                                ⚠️ {error}
+                            </p>
+                        )}
+
+                        <Button 
+                            onClick={handleRegister} 
+                            disabled={loading || (step === 2 && pin.join('').length !== 4) || (step === 3 && confirmPin.join('').length !== 4)}
+                            style={{ width: '100%' }}
+                            size="lg"
+                        >
+                            {loading ? '⏳ Création...' : step === 3 ? '✅ Créer mon compte' : 'Continuer →'}
+                        </Button>
                     </Card>
                 </div>
             );
