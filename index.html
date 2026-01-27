@@ -1342,23 +1342,38 @@
                                     key={game.id}
                                     style={{ 
                                         textAlign: 'center',
-                                        animationDelay: `${index * 0.05}s`
+                                        animationDelay: `${index * 0.05}s`,
+                                        overflow: 'hidden',
+                                        padding: 0
                                     }}
                                     className="animate-fade-in"
                                 >
-                                    <div style={{ 
-                                        fontSize: '40px', 
-                                        marginBottom: '12px',
-                                        filter: `drop-shadow(0 0 10px ${game.color})`
+                                    {/* Image du jeu */}
+                                    <div style={{
+                                        width: '100%',
+                                        height: '100px',
+                                        backgroundImage: `url(${game.image})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        position: 'relative'
                                     }}>
-                                        {game.emoji}
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '50%',
+                                            background: 'linear-gradient(transparent, var(--bg-card))'
+                                        }} />
                                     </div>
-                                    <div style={{ 
-                                        fontWeight: 600,
-                                        fontSize: '16px',
-                                        color: game.color
-                                    }}>
-                                        {game.name}
+                                    <div style={{ padding: '12px' }}>
+                                        <div style={{ 
+                                            fontWeight: 600,
+                                            fontSize: '16px',
+                                            color: game.color
+                                        }}>
+                                            {game.emoji} {game.name}
+                                        </div>
                                     </div>
                                 </Card>
                             ))}
@@ -3647,42 +3662,46 @@
                                         textAlign: 'center',
                                         background: position === 0 
                                             ? 'linear-gradient(180deg, rgba(0,240,255,0.2) 0%, var(--bg-card) 100%)'
-                                            : 'var(--bg-card)'
+                                            : 'var(--bg-card)',
+                                        overflow: 'hidden'
                                     }}>
                                         {/* Photo d'équipe */}
-                                        {team.image ? (
-                                            <img 
-                                                src={team.image} 
-                                                alt={team.name}
-                                                style={{
-                                                    width: '50px',
-                                                    height: '50px',
-                                                    minWidth: '50px',
-                                                    minHeight: '50px',
-                                                    maxWidth: '50px',
-                                                    maxHeight: '50px',
-                                                    borderRadius: '10px',
-                                                    objectFit: 'cover',
-                                                    marginBottom: '12px',
-                                                    border: '2px solid var(--accent-cyan)',
-                                                    flexShrink: 0
-                                                }}
-                                            />
-                                        ) : (
-                                            <div style={{
-                                                width: '50px',
-                                                height: '50px',
-                                                borderRadius: '10px',
-                                                background: 'var(--gradient-main)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginBottom: '12px',
-                                                fontSize: '20px'
-                                            }}>
-                                                👥
-                                            </div>
-                                        )}
+                                        <div style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            minWidth: '60px',
+                                            minHeight: '60px',
+                                            borderRadius: '12px',
+                                            overflow: 'hidden',
+                                            marginBottom: '12px',
+                                            border: '3px solid var(--accent-cyan)',
+                                            background: 'var(--bg-dark)'
+                                        }}>
+                                            {team.image ? (
+                                                <img 
+                                                    src={team.image} 
+                                                    alt={team.name}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        display: 'block'
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    background: 'var(--gradient-main)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '24px'
+                                                }}>
+                                                    👥
+                                                </div>
+                                            )}
+                                        </div>
                                         <div style={{
                                             fontFamily: "'Orbitron', monospace",
                                             fontSize: '14px',
@@ -3813,37 +3832,42 @@
                                                 alignItems: 'center',
                                                 gap: '12px'
                                             }}>
-                                                {team.image ? (
-                                                    <img 
-                                                        src={team.image} 
-                                                        alt={team.name}
-                                                        style={{
-                                                            width: '36px',
-                                                            height: '36px',
-                                                            minWidth: '36px',
-                                                            minHeight: '36px',
-                                                            maxWidth: '36px',
-                                                            maxHeight: '36px',
-                                                            borderRadius: '8px',
-                                                            objectFit: 'cover',
-                                                            border: '2px solid var(--accent-cyan)',
-                                                            flexShrink: 0
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div style={{
-                                                        width: '36px',
-                                                        height: '36px',
-                                                        borderRadius: '8px',
-                                                        background: 'var(--gradient-main)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '16px'
-                                                    }}>
-                                                        👥
-                                                    </div>
-                                                )}
+                                                <div style={{
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    minWidth: '40px',
+                                                    minHeight: '40px',
+                                                    borderRadius: '8px',
+                                                    overflow: 'hidden',
+                                                    border: '2px solid var(--accent-cyan)',
+                                                    background: 'var(--bg-dark)',
+                                                    flexShrink: 0
+                                                }}>
+                                                    {team.image ? (
+                                                        <img 
+                                                            src={team.image} 
+                                                            alt={team.name}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover',
+                                                                objectPosition: 'center'
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            background: 'var(--gradient-main)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '16px'
+                                                        }}>
+                                                            👥
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div style={{
                                                     fontFamily: "'Orbitron', monospace",
                                                     fontWeight: 600,
