@@ -204,18 +204,19 @@
         ];
 
         const LEVELS = [
-            { id: 'none', label: 'Ne joue pas', emoji: '❌', value: 0, color: '#444' },
-            { id: 'beginner', label: 'Débutant', emoji: '🟢', value: 1, color: '#22c55e' },
-            { id: 'intermediate', label: 'Intermédiaire', emoji: '🟡', value: 2, color: '#eab308' },
-            { id: 'confirmed', label: 'Confirmé', emoji: '🔵', value: 3, color: '#3b82f6' },
-            { id: 'tryhard', label: 'Tryhard', emoji: '🔴', value: 4, color: '#ef4444' }
+            { id: 'none', label: 'Jamais', emoji: '❌', value: 0, color: '#666' },
+            { id: '30min', label: '30 min', emoji: '⏱️', value: 1, color: '#22c55e' },
+            { id: '10h', label: '10h', emoji: '🕐', value: 2, color: '#84cc16' },
+            { id: '50h', label: '50h', emoji: '🕑', value: 3, color: '#eab308' },
+            { id: '200h', label: '200h', emoji: '🕒', value: 4, color: '#f97316' },
+            { id: '500h', label: '500h+', emoji: '🔥', value: 5, color: '#ef4444' }
         ];
 
         // Points par placement
         const POINTS_SYSTEM = {
-            win: 10,
-            lose: 3,
-            draw: 5
+            win: 3,
+            lose: 0,
+            draw: 1
         };
 
         // Données initiales - VIDE (les vraies données seront chargées depuis Supabase)
@@ -1241,6 +1242,9 @@
                         @media (max-width: 768px) {
                             .desktop-nav { display: none !important; }
                         }
+                        @media (max-width: 600px) {
+                            .games-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                        }
                     `}</style>
                 </header>
             );
@@ -1259,7 +1263,7 @@
                     {/* Hero Section */}
                     <section style={{ 
                         textAlign: 'center', 
-                        padding: '80px 0',
+                        padding: '60px 0 80px',
                         position: 'relative'
                     }} className="animate-fade-in">
                         <div style={{
@@ -1273,12 +1277,28 @@
                             pointerEvents: 'none'
                         }} />
                         
+                        {/* Badge accroche */}
+                        <div style={{
+                            display: 'inline-block',
+                            padding: '8px 20px',
+                            background: 'rgba(0,240,255,0.1)',
+                            border: '1px solid var(--accent-cyan)',
+                            borderRadius: '50px',
+                            fontSize: '14px',
+                            color: 'var(--accent-cyan)',
+                            marginBottom: '24px',
+                            fontWeight: 600,
+                            letterSpacing: '0.05em'
+                        }}>
+                            🏆 TOURNOI COMMUNAUTAIRE 2v2
+                        </div>
+                        
                         <img 
                             src="logo-after-ligue.svg" 
                             alt="After Ligue 2v2" 
                             style={{
-                                maxWidth: '400px',
-                                width: '85%',
+                                maxWidth: '350px',
+                                width: '80%',
                                 height: 'auto',
                                 marginBottom: '24px',
                                 filter: 'drop-shadow(0 0 40px rgba(0,240,255,0.5))',
@@ -1286,42 +1306,101 @@
                             }}
                         />
                         
-                        <p style={{
-                            fontSize: '24px',
-                            color: 'var(--text-secondary)',
-                            marginBottom: '12px',
-                            fontWeight: 300
+                        {/* Phrase d'accroche principale */}
+                        <h1 style={{
+                            fontSize: '28px',
+                            color: 'var(--text-primary)',
+                            marginBottom: '16px',
+                            fontWeight: 700,
+                            lineHeight: 1.3
                         }}>
-                            La ligue multi-jeux <span style={{ color: 'var(--accent-cyan)' }}>2v2</span> fun entre amis
-                        </p>
+                            Inscris-toi. Joue. Monte au classement.
+                        </h1>
                         
                         <p style={{
-                            fontSize: '16px',
-                            color: 'var(--text-muted)',
-                            marginBottom: '40px',
+                            fontSize: '18px',
+                            color: 'var(--text-secondary)',
+                            marginBottom: '12px',
+                            fontWeight: 400,
                             maxWidth: '500px',
-                            margin: '0 auto 40px'
+                            margin: '0 auto 32px'
                         }}>
-                            8 jeux • Tous niveaux • Ambiance afterwork
+                            La ligue multi-jeux <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>2v2</span> fun entre amis — 8 jeux, tous niveaux, ambiance afterwork
                         </p>
 
-                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {/* CTA Principal */}
+                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
                             {user ? (
-                                <Button size="lg" onClick={() => setCurrentPage('profile')}>
-                                    Mon Profil
-                                </Button>
+                                <>
+                                    <Button size="lg" onClick={() => setCurrentPage('teams')}>
+                                        👥 Mon équipe
+                                    </Button>
+                                    <Button variant="secondary" size="lg" onClick={() => setCurrentPage('matches')}>
+                                        ⚔️ Déclarer un match
+                                    </Button>
+                                </>
                             ) : (
-                                <Button size="lg" onClick={() => setCurrentPage('login')}>
-                                    🎮 S'inscrire avec Discord
-                                </Button>
+                                <>
+                                    <Button size="lg" onClick={() => setCurrentPage('login')} style={{
+                                        padding: '16px 32px',
+                                        fontSize: '18px',
+                                        boxShadow: '0 0 30px rgba(0,240,255,0.3)'
+                                    }}>
+                                        🚀 Rejoindre le tournoi
+                                    </Button>
+                                    <Button variant="secondary" size="lg" onClick={() => setCurrentPage('rules')}>
+                                        📋 Voir le règlement
+                                    </Button>
+                                </>
                             )}
-                            <Button variant="secondary" size="lg" onClick={() => setCurrentPage('rankings')}>
-                                Voir les classements
-                            </Button>
                         </div>
+                        
+                        {/* Lien règlement sous le CTA */}
+                        {!user && (
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                En t'inscrivant, tu acceptes le{' '}
+                                <span 
+                                    onClick={() => setCurrentPage('rules')}
+                                    style={{ color: 'var(--accent-cyan)', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                    règlement du tournoi
+                                </span>
+                            </p>
+                        )}
                     </section>
 
-                    {/* Games Grid */}
+                    {/* Stats rapides - visible sans connexion */}
+                    <section style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                        gap: '16px',
+                        marginBottom: '60px'
+                    }} className="animate-fade-in">
+                        {[
+                            { value: players.length, label: 'Joueurs', icon: '👥' },
+                            { value: teams.length, label: 'Équipes', icon: '🎮' },
+                            { value: matches.length, label: 'Matchs joués', icon: '⚔️' },
+                            { value: '8', label: 'Jeux', icon: '🏆' }
+                        ].map((stat, i) => (
+                            <Card key={stat.label} style={{ textAlign: 'center', padding: '20px' }}>
+                                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.icon}</div>
+                                <div style={{
+                                    fontFamily: "'Orbitron', monospace",
+                                    fontSize: '32px',
+                                    fontWeight: 800,
+                                    color: 'var(--accent-cyan)',
+                                    marginBottom: '4px'
+                                }}>
+                                    {stat.value}
+                                </div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    {stat.label}
+                                </div>
+                            </Card>
+                        ))}
+                    </section>
+
+                    {/* Games Grid 4x2 */}
                     <section style={{ marginTop: '60px' }}>
                         <h2 style={{
                             textAlign: 'center',
@@ -1332,50 +1411,78 @@
                             <span style={{ color: 'var(--accent-violet)' }}>8</span> JEUX AU PROGRAMME
                         </h2>
 
-                        <div style={{
+                        <div className="games-grid" style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                            gap: '16px'
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: '16px',
+                            maxWidth: '900px',
+                            margin: '0 auto'
                         }}>
                             {GAMES.map((game, index) => (
-                                <Card 
+                                <div 
                                     key={game.id}
                                     style={{ 
-                                        textAlign: 'center',
-                                        animationDelay: `${index * 0.05}s`,
+                                        position: 'relative',
+                                        borderRadius: '12px',
                                         overflow: 'hidden',
-                                        padding: 0
+                                        aspectRatio: '16/10',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.3s ease, box-shadow 0.3s ease'
                                     }}
-                                    className="animate-fade-in"
+                                    className="animate-fade-in game-card"
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                        e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                 >
-                                    {/* Image du jeu */}
+                                    {/* Image de fond assombrie */}
                                     <div style={{
-                                        width: '100%',
-                                        height: '100px',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
                                         backgroundImage: `url(${game.image})`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
-                                        position: 'relative'
+                                        filter: 'brightness(0.4)'
+                                    }} />
+                                    
+                                    {/* Overlay gradient */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background: 'linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.7) 100%)'
+                                    }} />
+                                    
+                                    {/* Texte avec glow */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        padding: '16px',
+                                        textAlign: 'center'
                                     }}>
-                                        <div style={{
-                                            position: 'absolute',
-                                            bottom: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '50%',
-                                            background: 'linear-gradient(transparent, var(--bg-card))'
-                                        }} />
-                                    </div>
-                                    <div style={{ padding: '12px' }}>
                                         <div style={{ 
-                                            fontWeight: 600,
-                                            fontSize: '16px',
-                                            color: game.color
+                                            fontWeight: 700,
+                                            fontSize: '15px',
+                                            color: '#fff',
+                                            textShadow: '0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.3)',
+                                            fontFamily: "'Orbitron', monospace",
+                                            letterSpacing: '0.05em'
                                         }}>
-                                            {game.emoji} {game.name}
+                                            {game.name}
                                         </div>
                                     </div>
-                                </Card>
+                                </div>
                             ))}
                         </div>
                     </section>
@@ -1446,50 +1553,6 @@
                             ))}
                         </div>
                     </section>
-
-                    {/* Stats */}
-                    <section style={{ 
-                        marginTop: '80px',
-                        padding: '40px',
-                        background: 'var(--gradient-card)',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border)'
-                    }}>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                            gap: '24px',
-                            textAlign: 'center'
-                        }}>
-                            {[
-                                { value: players.length, label: 'Joueurs inscrits' },
-                                { value: teams.length, label: 'Équipes formées' },
-                                { value: GAMES.length, label: 'Jeux disponibles' },
-                                { value: '∞', label: 'Fun garanti' }
-                            ].map((stat, index) => (
-                                <div key={stat.label}>
-                                    <div style={{
-                                        fontFamily: "'Orbitron', monospace",
-                                        fontSize: '48px',
-                                        fontWeight: 800,
-                                        background: 'var(--gradient-main)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent'
-                                    }}>
-                                        {stat.value}
-                                    </div>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        color: 'var(--text-secondary)',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.1em'
-                                    }}>
-                                        {stat.label}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
                 </div>
             );
         };
@@ -1498,14 +1561,23 @@
             const { login } = useAuth();
             const [discordName, setDiscordName] = useState('');
             const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState(false);
 
             const handleLogin = () => {
-                if (!discordName.trim()) return;
+                if (!discordName.trim()) {
+                    setError('Entre ton pseudo Discord');
+                    return;
+                }
+                setError('');
                 setLoading(true);
                 setTimeout(() => {
-                    login({ discordName: discordName.trim() });
-                    setCurrentPage('profile');
-                }, 800);
+                    setSuccess(true);
+                    setTimeout(() => {
+                        login({ discordName: discordName.trim() });
+                        setCurrentPage('profile');
+                    }, 800);
+                }, 600);
             };
 
             return (
@@ -1517,77 +1589,112 @@
                     padding: '24px'
                 }}>
                     <Card style={{ maxWidth: '400px', width: '100%' }} className="animate-fade-in">
-                        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                            <div style={{
-                                width: '80px',
-                                height: '80px',
-                                margin: '0 auto 24px',
-                                background: 'linear-gradient(135deg, #5865F2 0%, #7289DA 100%)',
-                                borderRadius: '16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '40px'
-                            }}>
-                                🎮
+                        {success ? (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+                                <h2 style={{ fontSize: '24px', marginBottom: '8px', color: '#22c55e' }}>
+                                    Inscription réussie !
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)' }}>
+                                    Bienvenue dans l'After League
+                                </p>
                             </div>
-                            <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>Connexion Discord</h2>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                                Simule ta connexion Discord pour tester l'app
-                            </p>
-                        </div>
+                        ) : (
+                            <>
+                                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                                    <div style={{
+                                        width: '80px',
+                                        height: '80px',
+                                        margin: '0 auto 24px',
+                                        background: 'linear-gradient(135deg, #5865F2 0%, #7289DA 100%)',
+                                        borderRadius: '16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '40px'
+                                    }}>
+                                        🎮
+                                    </div>
+                                    <h2 style={{ fontSize: '24px', marginBottom: '8px' }}>Rejoindre le tournoi</h2>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                                        Connecte-toi pour participer à l'After League
+                                    </p>
+                                </div>
 
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{
-                                display: 'block',
-                                marginBottom: '8px',
-                                fontSize: '12px',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                                color: 'var(--text-secondary)'
-                            }}>
-                                Pseudo Discord
-                            </label>
-                            <input
-                                type="text"
-                                value={discordName}
-                                onChange={(e) => setDiscordName(e.target.value)}
-                                placeholder="ex: Dodo#1234"
-                                style={{
-                                    width: '100%',
-                                    padding: '14px 16px',
-                                    background: 'var(--bg-dark)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '6px',
-                                    color: 'var(--text-primary)',
-                                    fontSize: '16px',
-                                    fontFamily: "'Rajdhani', sans-serif",
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s ease'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
-                                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
-                                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                            />
-                        </div>
+                                <div style={{ marginBottom: '24px' }}>
+                                    <label style={{
+                                        display: 'block',
+                                        marginBottom: '8px',
+                                        fontSize: '12px',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.1em',
+                                        color: 'var(--text-secondary)'
+                                    }}>
+                                        Pseudo Discord
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={discordName}
+                                        onChange={(e) => { setDiscordName(e.target.value); setError(''); }}
+                                        placeholder="ex: Dodo#1234"
+                                        style={{
+                                            width: '100%',
+                                            padding: '14px 16px',
+                                            background: 'var(--bg-dark)',
+                                            border: `1px solid ${error ? '#ef4444' : 'var(--border)'}`,
+                                            borderRadius: '6px',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '16px',
+                                            fontFamily: "'Rajdhani', sans-serif",
+                                            outline: 'none',
+                                            transition: 'border-color 0.2s ease'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = error ? '#ef4444' : 'var(--accent-cyan)'}
+                                        onBlur={(e) => e.target.style.borderColor = error ? '#ef4444' : 'var(--border)'}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                                    />
+                                    {error && (
+                                        <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px' }}>
+                                            ⚠️ {error}
+                                        </p>
+                                    )}
+                                </div>
 
-                        <Button 
-                            onClick={handleLogin} 
-                            disabled={!discordName.trim() || loading}
-                            style={{ width: '100%' }}
-                            size="lg"
-                        >
-                            {loading ? '⏳ Connexion...' : '🚀 Se connecter'}
-                        </Button>
+                                <Button 
+                                    onClick={handleLogin} 
+                                    disabled={loading}
+                                    style={{ width: '100%' }}
+                                    size="lg"
+                                >
+                                    {loading ? '⏳ Connexion en cours...' : '🚀 S\'inscrire'}
+                                </Button>
 
-                        <p style={{
-                            marginTop: '24px',
-                            textAlign: 'center',
-                            fontSize: '12px',
-                            color: 'var(--text-muted)'
-                        }}>
-                            Version démo • OAuth Discord sera activé en production
-                        </p>
+                                <p style={{
+                                    marginTop: '16px',
+                                    textAlign: 'center',
+                                    fontSize: '12px',
+                                    color: 'var(--text-muted)'
+                                }}>
+                                    En t'inscrivant, tu acceptes le{' '}
+                                    <span 
+                                        onClick={() => setCurrentPage('rules')}
+                                        style={{ color: 'var(--accent-cyan)', cursor: 'pointer', textDecoration: 'underline' }}
+                                    >
+                                        règlement
+                                    </span>
+                                </p>
+
+                                <p style={{
+                                    marginTop: '16px',
+                                    textAlign: 'center',
+                                    fontSize: '11px',
+                                    color: 'var(--text-muted)',
+                                    opacity: 0.7
+                                }}>
+                                    Version démo • OAuth Discord sera activé en production
+                                </p>
+                            </>
+                        )}
                     </Card>
                 </div>
             );
@@ -2051,13 +2158,19 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>POINTS</div>
                                         <div style={{ fontFamily: "'Orbitron', monospace", fontSize: '24px', fontWeight: 700, color: 'var(--accent-cyan)' }}>
                                             {Object.values(userTeam.points || {}).reduce((a, b) => a + b, 0)}
                                         </div>
                                     </div>
+                                    {/* Bouton Inviter si équipe incomplète */}
+                                    {userTeam.players.length < 2 && (
+                                        <Button size="sm" onClick={() => setShowJoinModal(true)}>
+                                            ➕ Inviter
+                                        </Button>
+                                    )}
                                     {userTeam.players[0] === user.discordName && (
                                         <Button variant="ghost" size="sm" onClick={openEditTeamModal}>
                                             ✏️ Modifier
@@ -2072,6 +2185,19 @@
                                     )}
                                 </div>
                             </div>
+                            {/* Message équipe incomplète */}
+                            {userTeam.players.length < 2 && !settings.tournamentStarted && (
+                                <div style={{ 
+                                    marginTop: '16px', 
+                                    padding: '10px 16px', 
+                                    background: 'rgba(249,115,22,0.1)', 
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    color: '#f97316'
+                                }}>
+                                    ⚠️ Ton équipe n'est pas complète — invite un joueur pour participer au tournoi
+                                </div>
+                            )}
                             {settings.tournamentStarted && (
                                 <div style={{ 
                                     marginTop: '16px', 
@@ -2372,7 +2498,14 @@
                                 </p>
                                 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
-                                    {players.filter(p => p.status === 'solo' && p.discordName !== user?.discordName).map(player => (
+                                    {players.filter(p => {
+                                        // Exclure soi-même
+                                        if (p.discordName === user?.discordName) return false;
+                                        // Exclure les joueurs déjà dans une équipe complète (2 joueurs)
+                                        const playerTeam = teams.find(t => t.players && t.players.includes(p.discordName));
+                                        if (playerTeam && playerTeam.players.length >= 2) return false;
+                                        return true;
+                                    }).map(player => (
                                         <div 
                                             key={player.id}
                                             style={{
@@ -2431,7 +2564,12 @@
                                     ))}
                                 </div>
 
-                                {players.filter(p => p.status === 'solo' && p.discordName !== user?.discordName).length === 0 && (
+                                {players.filter(p => {
+                                    if (p.discordName === user?.discordName) return false;
+                                    const playerTeam = teams.find(t => t.players && t.players.includes(p.discordName));
+                                    if (playerTeam && playerTeam.players.length >= 2) return false;
+                                    return true;
+                                }).length === 0 && (
                                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
                                         Aucun joueur solo disponible pour le moment
                                     </div>
@@ -2781,23 +2919,51 @@
                 if (!invitation || !supabase) return;
                 
                 try {
-                    // Créer l'équipe directement dans Supabase
-                    const teamName = invitation.teamName || `Équipe ${invitation.from.split('#')[0]}`;
-                    const { data: newTeamData, error: teamError } = await supabase.from('teams').insert({
-                        name: teamName,
-                        image_url: `https://api.dicebear.com/7.x/shapes/svg?seed=${Date.now()}&backgroundColor=0f0f17`,
-                        players: [invitation.from, user.discordName],
-                        active: true,
-                        points: { 'rocket-league': 0, 'brawlhalla': 0, 'league-of-legends': 0, 'valorant': 0, 'fall-guys': 0, 'trackmania': 0, 'hearthstone': 0, '2xko': 0 }
-                    }).select().single();
+                    // Vérifier si l'inviteur a déjà une équipe
+                    const { data: existingTeams } = await supabase
+                        .from('teams')
+                        .select('*')
+                        .contains('players', [invitation.from]);
                     
-                    if (teamError) {
-                        console.error('Erreur création équipe:', teamError);
-                        alert('Erreur lors de la création de l\'équipe');
-                        return;
+                    let teamName;
+                    
+                    if (existingTeams && existingTeams.length > 0) {
+                        // L'inviteur a déjà une équipe, ajouter le joueur
+                        const existingTeam = existingTeams[0];
+                        const updatedPlayers = [...(existingTeam.players || []), user.discordName];
+                        
+                        const { error: updateError } = await supabase
+                            .from('teams')
+                            .update({ players: updatedPlayers })
+                            .eq('id', existingTeam.id);
+                        
+                        if (updateError) {
+                            console.error('Erreur ajout joueur:', updateError);
+                            alert('Erreur lors de l\'ajout à l\'équipe');
+                            return;
+                        }
+                        
+                        teamName = existingTeam.name;
+                        console.log('✅ Joueur ajouté à l\'équipe:', existingTeam.name);
+                    } else {
+                        // Créer une nouvelle équipe
+                        teamName = invitation.teamName || `Équipe ${invitation.from.split('#')[0]}`;
+                        const { error: teamError } = await supabase.from('teams').insert({
+                            name: teamName,
+                            image_url: `https://api.dicebear.com/7.x/shapes/svg?seed=${Date.now()}&backgroundColor=0f0f17`,
+                            players: [invitation.from, user.discordName],
+                            active: true,
+                            points: { 'rocket-league': 0, 'brawlhalla': 0, 'league-of-legends': 0, 'valorant': 0, 'fall-guys': 0, 'trackmania': 0, 'hearthstone': 0, '2xko': 0 }
+                        });
+                        
+                        if (teamError) {
+                            console.error('Erreur création équipe:', teamError);
+                            alert('Erreur lors de la création de l\'équipe');
+                            return;
+                        }
+                        
+                        console.log('✅ Équipe créée:', teamName);
                     }
-                    
-                    console.log('✅ Équipe créée:', newTeamData);
                     
                     // Mettre à jour le statut de l'invitation
                     await supabase.from('team_invitations')
@@ -2814,10 +2980,7 @@
                         .eq('discord_name', user.discordName);
                     
                     setInvitations(prev => prev.filter(i => i.id !== invitationId));
-                    alert(`Équipe "${teamName}" créée avec succès ! 🎉`);
-                    
-                    // Recharger la page pour voir les changements
-                    window.location.reload();
+                    alert(`Tu as rejoint l'équipe "${teamName}" ! 🎉`);
                     
                 } catch (error) {
                     console.error('Erreur:', error);
@@ -3561,21 +3724,22 @@
 
             return (
                 <div style={{ padding: '40px 24px', maxWidth: '1000px', margin: '0 auto' }}>
-                    <div className="animate-fade-in">
+                    <div className="animate-fade-in" style={{ textAlign: 'center' }}>
                         <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>
-                            Classements
+                            🏆 Classements
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
                             Classement général et par jeu
                         </p>
                     </div>
 
-                    {/* Filtres */}
+                    {/* Filtres centrés */}
                     <div style={{
                         display: 'flex',
                         gap: '8px',
                         flexWrap: 'wrap',
-                        marginBottom: '32px'
+                        marginBottom: '32px',
+                        justifyContent: 'center'
                     }} className="animate-fade-in">
                         <button
                             onClick={() => setSelectedGame('general')}
@@ -3747,7 +3911,7 @@
                     </div>
 
                     {/* Tableau complet */}
-                    <Card hover={false} className="animate-fade-in">
+                    <Card hover={false} className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
                         <table style={{
                             width: '100%',
                             borderCollapse: 'collapse'
@@ -3909,76 +4073,169 @@
             );
         };
 
-        const RulesPage = () => (
+        const RulesPage = ({ setCurrentPage }) => {
+            const { user } = useAuth();
+            
+            return (
             <div style={{ padding: '40px 24px', maxWidth: '800px', margin: '0 auto' }}>
                 <div className="animate-fade-in">
                     <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>
-                        Règlement
+                        📋 Règlement
                     </h1>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-                        Les règles de la ligue AFTER LEAGUE
+                        Tout ce qu'il faut savoir pour participer à AFTER LEAGUE
                     </p>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Résumé rapide */}
+                <Card style={{ 
+                    marginBottom: '32px', 
+                    background: 'linear-gradient(135deg, rgba(0,240,255,0.1) 0%, rgba(168,85,247,0.1) 100%)',
+                    borderColor: 'var(--accent-cyan)'
+                }} className="animate-fade-in">
+                    <h3 style={{ fontSize: '16px', marginBottom: '16px', color: 'var(--accent-cyan)' }}>
+                        ⚡ EN BREF
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                        {[
+                            { icon: '👥', text: 'Équipes de 2 joueurs' },
+                            { icon: '🎮', text: '8 jeux différents' },
+                            { icon: '🏆', text: 'Points par victoire' },
+                            { icon: '😎', text: 'Ambiance fun, pas tryhard' }
+                        ].map(item => (
+                            <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{item.text}</span>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {[
                         {
                             title: '🎯 Concept',
-                            content: `AFTER LEAGUE est une ligue multi-jeux 2v2 fun, dans l'esprit afterwork. L'objectif est de s'amuser entre potes sur plusieurs jeux, pas de devenir pro. Tous les niveaux sont les bienvenus !`
+                            points: [
+                                '<strong>Ligue multi-jeux 2v2</strong> dans l\'esprit afterwork',
+                                'Objectif : <strong>s\'amuser entre potes</strong>, pas devenir pro',
+                                '<strong>Tous les niveaux</strong> sont les bienvenus'
+                            ]
                         },
                         {
-                            title: '👥 Format',
-                            content: `Chaque équipe est composée de 2 joueurs (duo). Tu peux venir avec ton binôme, ou t'inscrire solo et on t'en attribuera un de niveau similaire. Les duos restent fixes pour toute la saison.`
+                            title: '👥 Les équipes',
+                            points: [
+                                'Chaque équipe = <strong>2 joueurs (duo)</strong>',
+                                'Tu peux venir avec ton binôme ou t\'inscrire solo',
+                                'Les duos <strong>restent fixes</strong> pour toute la saison'
+                            ]
                         },
                         {
-                            title: '🎮 Jeux',
-                            content: `8 jeux au programme : Rocket League, Brawlhalla, League of Legends, Valorant, Fall Guys, TrackMania, Hearthstone (2v2) et 2XKO. Tu n'es pas obligé de jouer à tous les jeux.`
+                            title: '🎮 Les jeux',
+                            points: [
+                                '<strong>8 jeux</strong> : Rocket League, Brawlhalla, LoL, Valorant, Fall Guys, TrackMania, Hearthstone, 2XKO',
+                                'Tu n\'es <strong>pas obligé de jouer à tous</strong>',
+                                'Choisis les jeux où tu veux gagner des points'
+                            ]
                         },
                         {
-                            title: '📊 Niveaux',
-                            content: `À l'inscription, tu déclares ton niveau sur chaque jeu (Ne joue pas / Débutant / Intermédiaire / Confirmé / Tryhard). Sois honnête, c'est pour équilibrer les matchs ! Un admin peut modifier ton niveau en cas d'abus flagrant.`
+                            title: '📊 Les niveaux',
+                            points: [
+                                'À l\'inscription, <strong>déclare ton niveau</strong> sur chaque jeu',
+                                '5 niveaux : Ne joue pas / Débutant / Intermédiaire / Confirmé / Tryhard',
+                                '<strong>Sois honnête</strong> — c\'est pour équilibrer les matchs'
+                            ]
                         },
                         {
-                            title: '🏆 Points',
-                            content: `Chaque match gagné rapporte des points. Les points sont cumulés par jeu et pour le classement général. Le système de points exact sera communiqué avant le début de la saison.`
+                            title: '🏆 Les points',
+                            points: [
+                                '<strong>+3 pts</strong> par victoire',
+                                '<strong>+1 pt</strong> en cas de match nul',
+                                '<strong>0 pt</strong> en cas de défaite',
+                                'Classement général + classement par jeu'
+                            ]
                         },
                         {
-                            title: '📅 Organisation',
-                            content: `Les matchs s'organisent entre les équipes via Discord. Pas de matchmaking automatique, on est entre adultes responsables. Si un match ne peut pas se jouer, prévenez l'orga.`
+                            title: '📅 Organisation des matchs',
+                            points: [
+                                'Les matchs s\'organisent <strong>entre équipes via Discord</strong>',
+                                'Pas de matchmaking auto — on est entre adultes',
+                                'Prévenez l\'orga si un match ne peut pas se jouer'
+                            ]
                         },
                         {
-                            title: '🚫 Fair-play',
-                            content: `On est là pour s'amuser. Le respect des adversaires est obligatoire. Triche, toxicité ou mauvaise foi = exclusion. Les décisions des admins sont finales.`
-                        },
-                        {
-                            title: '❓ Questions',
-                            content: `Pour toute question, contactez l'orga sur Discord. On est là pour que tout le monde passe un bon moment !`
+                            title: '🚫 Fair-play obligatoire',
+                            points: [
+                                '<strong>Respect des adversaires</strong> obligatoire',
+                                'Triche, toxicité, mauvaise foi = <strong>exclusion</strong>',
+                                'Les décisions des admins sont finales'
+                            ]
                         }
                     ].map((section, index) => (
                         <Card 
                             key={section.title}
-                            style={{ animationDelay: `${index * 0.05}s` }}
+                            style={{ animationDelay: `${index * 0.03}s` }}
                             className="animate-fade-in"
                         >
                             <h3 style={{ 
                                 fontSize: '18px', 
-                                marginBottom: '12px',
-                                fontFamily: "'Rajdhani', sans-serif"
+                                marginBottom: '16px',
+                                fontFamily: "'Rajdhani', sans-serif",
+                                fontWeight: 700
                             }}>
                                 {section.title}
                             </h3>
-                            <p style={{
-                                fontSize: '15px',
-                                color: 'var(--text-secondary)',
-                                lineHeight: 1.7
+                            <ul style={{
+                                margin: 0,
+                                paddingLeft: '20px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px'
                             }}>
-                                {section.content}
-                            </p>
+                                {section.points.map((point, i) => (
+                                    <li 
+                                        key={i}
+                                        style={{
+                                            fontSize: '14px',
+                                            color: 'var(--text-secondary)',
+                                            lineHeight: 1.6
+                                        }}
+                                        dangerouslySetInnerHTML={{ __html: point }}
+                                    />
+                                ))}
+                            </ul>
                         </Card>
                     ))}
                 </div>
+
+                {/* CTA inscription */}
+                {!user && (
+                    <Card style={{ 
+                        marginTop: '32px', 
+                        textAlign: 'center',
+                        background: 'var(--gradient-card)',
+                        borderColor: 'var(--accent-violet)'
+                    }} className="animate-fade-in">
+                        <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>
+                            Prêt à rejoindre ?
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '14px' }}>
+                            En t'inscrivant, tu acceptes ce règlement
+                        </p>
+                        <Button size="lg" onClick={() => setCurrentPage('login')}>
+                            🚀 Rejoindre le tournoi
+                        </Button>
+                    </Card>
+                )}
+
+                {/* Contact */}
+                <Card style={{ marginTop: '24px', textAlign: 'center' }} className="animate-fade-in">
+                    <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                        ❓ Une question ? Contacte l'orga sur Discord
+                    </p>
+                </Card>
             </div>
-        );
+            );
+        };
 
         // ============================================
         // PAGE ADMIN
@@ -5396,7 +5653,6 @@
                     setShowDeclareModal(false);
                     setMatchDeclared(false);
                     setNewMatch({ team1Id: '', team2Id: '', gameId: '', winner: '' });
-                    window.location.reload(); // Recharger pour voir les points mis à jour
                 }, 2000);
             };
 
@@ -6083,6 +6339,7 @@
                             newUser.partner = existingPlayer.partner || '';
                             newUser.availability = existingPlayer.availability || '';
                             newUser.levels = existingPlayer.levels || {};
+                            newUser.profileImage = existingPlayer.avatar_url || existingPlayer.profile_image || null;
                             console.log('✅ Joueur existant récupéré:', userData.discordName);
                         } else {
                             // Nouveau joueur, l'ajouter
@@ -6119,8 +6376,25 @@
                 Storage.remove('currentUser');
             };
 
-            const updateUser = (updates) => {
-                setUser(prev => ({ ...prev, ...updates }));
+            const updateUser = async (updates) => {
+                const newUserData = { ...user, ...updates };
+                setUser(newUserData);
+                
+                // Sauvegarder dans Supabase
+                if (supabase && user?.discordName) {
+                    try {
+                        await supabase.from('players').update({
+                            status: newUserData.status,
+                            partner: newUserData.partner,
+                            availability: newUserData.availability,
+                            levels: newUserData.levels,
+                            avatar_url: newUserData.profileImage
+                        }).eq('discord_name', user.discordName);
+                        console.log('✅ Profil sauvegardé dans Supabase');
+                    } catch (error) {
+                        console.error('Erreur sauvegarde profil:', error);
+                    }
+                }
             };
 
             // Récupérer l'utilisateur au chargement
@@ -6143,7 +6417,8 @@
                                     status: data.status || 'solo',
                                     partner: data.partner || '',
                                     availability: data.availability || '',
-                                    levels: data.levels || GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {})
+                                    levels: data.levels || GAMES.reduce((acc, game) => ({ ...acc, [game.id]: 0 }), {}),
+                                    profileImage: data.avatar_url || data.profile_image || null
                                 });
                                 return;
                             }
@@ -6182,7 +6457,7 @@
                     case 'rankings':
                         return <RankingsPage setCurrentPage={setCurrentPage} setSelectedPlayer={setSelectedPlayer} />;
                     case 'rules':
-                        return <RulesPage />;
+                        return <RulesPage setCurrentPage={setCurrentPage} />;
                     case 'admin':
                         return <AdminPage setCurrentPage={setCurrentPage} />;
                     case 'player-profile':
