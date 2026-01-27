@@ -429,7 +429,8 @@
                         status: updates.status,
                         partner: updates.partner,
                         availability: updates.availability,
-                        levels: updates.levels
+                        levels: updates.levels,
+                        avatar_url: updates.avatarUrl || updates.profileImage
                     }).eq('id', playerId);
                 }
                 setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, ...updates } : p));
@@ -1453,34 +1454,6 @@
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center'
                                     }} />
-                                    
-                                    {/* Overlay gradient en bas */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: '50%',
-                                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))'
-                                    }} />
-                                    
-                                    {/* Nom du jeu */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '10px',
-                                        left: 0,
-                                        right: 0,
-                                        textAlign: 'center'
-                                    }}>
-                                        <span style={{ 
-                                            fontWeight: 600,
-                                            fontSize: '13px',
-                                            color: '#fff',
-                                            textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                                        }}>
-                                            {game.name}
-                                        </span>
-                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -2463,6 +2436,93 @@
                                     letterSpacing: '0.1em'
                                 }}
                             />
+                        </div>
+                        
+                        {/* Gestion des membres */}
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{
+                                display: 'block',
+                                marginBottom: '12px',
+                                fontSize: '12px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                Membres de l'équipe
+                            </label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {userTeam?.players?.map((playerName, idx) => (
+                                    <div key={playerName} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '12px 16px',
+                                        background: 'var(--bg-dark)',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--border)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '18px' }}>{idx === 0 ? '👑' : '👤'}</span>
+                                            <span style={{ fontWeight: 500 }}>{playerName}</span>
+                                            {idx === 0 && <span style={{ fontSize: '11px', color: 'var(--accent-cyan)' }}>(Chef)</span>}
+                                        </div>
+                                        {idx !== 0 && playerName !== user?.discordName && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm(`Virer ${playerName} de l'équipe ?`)) {
+                                                        // Retirer le joueur
+                                                        const newPlayers = userTeam.players.filter(p => p !== playerName);
+                                                        if (supabase) {
+                                                            await supabase.from('teams').update({ players: newPlayers }).eq('id', userTeam.id);
+                                                            await supabase.from('players').update({ status: 'solo', partner: null }).eq('discord_name', playerName);
+                                                        }
+                                                        alert(`${playerName} a été retiré de l'équipe`);
+                                                        setShowEditTeamModal(false);
+                                                    }
+                                                }}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    background: 'rgba(239,68,68,0.2)',
+                                                    border: '1px solid #ef4444',
+                                                    borderRadius: '6px',
+                                                    color: '#ef4444',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                ❌ Virer
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                
+                                {/* Bouton inviter si équipe incomplète */}
+                                {userTeam?.players?.length < 2 && (
+                                    <button
+                                        onClick={() => {
+                                            setShowEditTeamModal(false);
+                                            setShowJoinModal(true);
+                                        }}
+                                        style={{
+                                            padding: '12px 16px',
+                                            background: 'rgba(0,240,255,0.1)',
+                                            border: '2px dashed var(--accent-cyan)',
+                                            borderRadius: '8px',
+                                            color: 'var(--accent-cyan)',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 600,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        ➕ Inviter un joueur
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         
                         <Button 
@@ -3843,14 +3903,15 @@
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'flex-end',
-                        gap: '20px',
+                        gap: '24px',
                         marginBottom: '48px',
                         padding: '20px'
                     }} className="animate-fade-in">
                         {[1, 0, 2].map((position) => {
                             const team = rankings[position];
                             if (!team) return null;
-                            const heights = ['220px', '180px', '140px'];
+                            const heights = ['260px', '210px', '170px'];
+                            const widths = ['200px', '220px', '200px'];
                             const medals = ['🥇', '🥈', '🥉'];
                             const actualPosition = [1, 0, 2].indexOf(position);
                             
@@ -3866,13 +3927,13 @@
                                     }}
                                 >
                                     <div style={{
-                                        fontSize: '40px',
+                                        fontSize: '48px',
                                         marginBottom: '8px'
                                     }}>
                                         {medals[position]}
                                     </div>
                                     <Card style={{
-                                        width: '180px',
+                                        width: widths[position],
                                         height: heights[position],
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -3886,15 +3947,14 @@
                                     }}>
                                         {/* Photo d'équipe */}
                                         <div style={{
-                                            width: '60px',
-                                            height: '60px',
-                                            minWidth: '60px',
-                                            minHeight: '60px',
-                                            borderRadius: '12px',
+                                            width: position === 0 ? '80px' : '70px',
+                                            height: position === 0 ? '80px' : '70px',
+                                            borderRadius: '14px',
                                             overflow: 'hidden',
-                                            marginBottom: '12px',
+                                            marginBottom: '14px',
                                             border: '3px solid var(--accent-cyan)',
-                                            background: 'var(--bg-dark)'
+                                            background: 'var(--bg-dark)',
+                                            flexShrink: 0
                                         }}>
                                             {team.image ? (
                                                 <img 
@@ -3915,7 +3975,7 @@
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    fontSize: '24px'
+                                                    fontSize: '28px'
                                                 }}>
                                                     👥
                                                 </div>
@@ -4469,9 +4529,9 @@
                                     justifyContent: 'center',
                                     fontSize: '48px'
                                 }}>
-                                    {player.profileImage ? (
+                                    {(player.profileImage || player.avatarUrl) ? (
                                         <img 
-                                            src={player.profileImage} 
+                                            src={player.profileImage || player.avatarUrl} 
                                             alt={player.discordName}
                                             style={{
                                                 width: '100%',
