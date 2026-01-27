@@ -193,14 +193,14 @@
         // ============================================
 
         const GAMES = [
-            { id: 'rocket-league', name: 'Rocket League', emoji: '🚗', color: '#00a2ff' },
-            { id: 'brawlhalla', name: 'Brawlhalla', emoji: '⚔️', color: '#ffd700' },
-            { id: 'league-of-legends', name: 'League of Legends', emoji: '🏆', color: '#c89b3c' },
-            { id: 'valorant', name: 'Valorant', emoji: '🎯', color: '#ff4655' },
-            { id: 'fall-guys', name: 'Fall Guys', emoji: '🫘', color: '#ff69b4' },
-            { id: 'trackmania', name: 'TrackMania', emoji: '🏎️', color: '#00ff00' },
-            { id: 'hearthstone', name: 'Hearthstone', emoji: '🃏', color: '#ff8c00' },
-            { id: '2xko', name: '2XKO', emoji: '🥊', color: '#9932cc' }
+            { id: 'rocket-league', name: 'Rocket League', emoji: '🚗', color: '#00a2ff', image: 'rocket-league.jpg' },
+            { id: 'brawlhalla', name: 'Brawlhalla', emoji: '⚔️', color: '#ffd700', image: 'brawlhalla.jpg' },
+            { id: 'league-of-legends', name: 'League of Legends', emoji: '🏆', color: '#c89b3c', image: 'lol.jpg' },
+            { id: 'valorant', name: 'Valorant', emoji: '🎯', color: '#ff4655', image: 'valorant.jpg' },
+            { id: 'fall-guys', name: 'Fall Guys', emoji: '🫘', color: '#ff69b4', image: 'fall-guys.jpg' },
+            { id: 'trackmania', name: 'TrackMania', emoji: '🏎️', color: '#00ff00', image: 'trackmania.jpg' },
+            { id: 'hearthstone', name: 'Hearthstone', emoji: '🃏', color: '#ff8c00', image: 'hearthstone.jpg' },
+            { id: '2xko', name: '2XKO', emoji: '🥊', color: '#9932cc', image: '2xko.jpg' }
         ];
 
         const LEVELS = [
@@ -3657,10 +3657,15 @@
                                                 style={{
                                                     width: '50px',
                                                     height: '50px',
+                                                    minWidth: '50px',
+                                                    minHeight: '50px',
+                                                    maxWidth: '50px',
+                                                    maxHeight: '50px',
                                                     borderRadius: '10px',
                                                     objectFit: 'cover',
                                                     marginBottom: '12px',
-                                                    border: '2px solid var(--accent-cyan)'
+                                                    border: '2px solid var(--accent-cyan)',
+                                                    flexShrink: 0
                                                 }}
                                             />
                                         ) : (
@@ -3815,9 +3820,14 @@
                                                         style={{
                                                             width: '36px',
                                                             height: '36px',
+                                                            minWidth: '36px',
+                                                            minHeight: '36px',
+                                                            maxWidth: '36px',
+                                                            maxHeight: '36px',
                                                             borderRadius: '8px',
                                                             objectFit: 'cover',
-                                                            border: '2px solid var(--accent-cyan)'
+                                                            border: '2px solid var(--accent-cyan)',
+                                                            flexShrink: 0
                                                         }}
                                                     />
                                                 ) : (
@@ -6013,17 +6023,13 @@
         };
 
         const App = () => {
-            const [showSplash, setShowSplash] = useState(() => {
-                // Ne montrer le splash que si on n'a pas encore visité
-                return !Storage.get('hasVisited', false);
-            });
+            const [showSplash, setShowSplash] = useState(true); // Toujours afficher le splash
             const [currentPage, setCurrentPage] = useState('home');
             const [user, setUser] = useState(null);
             const [selectedPlayer, setSelectedPlayer] = useState(null);
 
             const handleEnterSite = () => {
                 setShowSplash(false);
-                Storage.set('hasVisited', true);
             };
 
             const login = async (userData) => {
